@@ -1,0 +1,20 @@
+apiVersion: v2
+name: autoclusters-argo-workflows
+description: Argo Workflows for autoclusters GPU testing - wraps upstream argo-workflows with custom RBAC, WorkflowTemplates, and PriorityClass
+type: application
+version: 0.1.0
+appVersion: "3.7.9"
+dependencies:
+  - name: argo-workflows
+    version: "0.47.2"
+    repository: "https://argoproj.github.io/argo-helm"
+keywords:
+  - kubernetes
+  - argo-workflows
+  - gpu-testing
+maintainers:
+  - name: Crusoe Energy
+    url: https://crusoeenergy.com
+home: https://github.com/crusoe-cloud/autoclusters-controller-helm-charts
+sources:
+  - https://github.com/crusoe-cloud/autoclusters-controller-helm-charts

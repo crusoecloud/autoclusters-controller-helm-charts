@@ -1,0 +1,3 @@
+*.tgz
+charts/autoclusters-argo-workflows/charts/
+charts/autoclusters-argo-workflows/Chart.lock

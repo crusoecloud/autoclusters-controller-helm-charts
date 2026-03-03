@@ -1,0 +1,17 @@
+apiVersion: v2
+name: crusoe-npd
+description: A Helm chart for Node Problem Detector with custom GPU health monitoring plugins
+type: application
+version: 0.1.0
+appVersion: "v0.8.19-crusoe"
+keywords:
+  - kubernetes
+  - node-problem-detector
+  - gpu
+  - health-monitoring
+maintainers:
+  - name: Crusoe Energy
+    url: https://crusoeenergy.com
+home: https://github.com/crusoe-cloud/autoclusters-controller-helm-charts
+sources:
+  - https://github.com/crusoe-cloud/autoclusters-controller-helm-charts

@@ -1,0 +1,12 @@
+{{- if .Values.priorityClass.create }}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ .Values.priorityClass.name }}
+  labels:
+    {{- include "autoclusters-argo-workflows.labels" . | nindent 4 }}
+value: {{ .Values.priorityClass.value }}
+preemptionPolicy: {{ .Values.priorityClass.preemptionPolicy }}
+globalDefault: false
+description: "Low priority class for GPU test workflows to ensure preemption by production workloads"
+{{- end }}

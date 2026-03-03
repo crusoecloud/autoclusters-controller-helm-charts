@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "crusoe-npd.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "crusoe-npd.labels" . | nindent 4 }}
+data:
+  gpu-dcgm-monitor.json: |
+    {
+        "plugin": "custom",
+        "pluginConfig": {
+            "invoke_interval": {{ .Values.plugin.invokeInterval | quote }},
+            "timeout": {{ .Values.plugin.timeout | quote }},
+            "max_output_length": {{ .Values.plugin.maxOutputLength }},
+            "concurrency": {{ .Values.plugin.concurrency }},
+            "skip_initial_status": {{ .Values.plugin.skipInitialStatus }}
+        },
+        "source": "gpu-health-monitor",
+        "conditions": [
+            {
+                "type": "GPUDCGMUnhealthy",
+                "reason": "GPUDCGMTestPassed",
+                "message": "GPU DCGM Level 3 diagnostics passed"
+            }
+        ],
+        "rules": [
+            {
+                "type": "permanent",
+                "condition": "GPUDCGMUnhealthy",
+                "reason": "GPUDCGMTestFailed",
+                "path": "/config/plugin/check_gpu_health.sh",
+                "args": ["gpu-dcgm-diag"]
+            }
+        ]
+    }

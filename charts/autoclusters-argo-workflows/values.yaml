@@ -1,0 +1,50 @@
+# Upstream argo-workflows subchart values
+argo-workflows:
+  server:
+    enabled: false
+  controller:
+    workflowNamespaces:
+      - crusoe-system
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    metricsConfig:
+      enabled: true
+      port: 9090
+    workflowDefaults:
+      spec:
+        podGC:
+          strategy: OnPodCompletion
+        ttlStrategy:
+          secondsAfterCompletion: 86400
+          secondsAfterSuccess: 86400
+          secondsAfterFailure: 172800
+    clusterWorkflowTemplates:
+      enabled: false
+  crds:
+    install: true
+    keep: true
+  singleNamespace: true
+  workflow:
+    serviceAccount:
+      create: true
+      name: argo
+
+# WorkflowTemplate configuration
+workflowTemplates:
+  enabled: true
+
+# NCCL tests image (pre-built with all_reduce_perf binary)
+ncclTests:
+  image: ""  # Required: set at install time
+
+# PriorityClass for GPU test workflows
+priorityClass:
+  create: true
+  name: scavenger
+  value: -1000
+  preemptionPolicy: PreemptLowerPriority

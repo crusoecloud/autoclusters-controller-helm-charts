@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "crusoe-npd.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "crusoe-npd.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "crusoe-npd.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "crusoe-npd.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "crusoe-npd.serviceAccountName" . }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: node-problem-detector
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          command:
+            - /node-problem-detector
+          args:
+            - --logtostderr
+            - --port={{ .Values.port }}
+            - --config.system-log-monitor=
+            - --config.custom-plugin-monitor=/config/gpu-dcgm-monitor.json
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NAMESPACE
+              value: {{ .Values.workflowNamespace | quote }}
+          ports:
+            - containerPort: {{ .Values.port }}
+              name: http
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config/gpu-dcgm-monitor.json
+              subPath: gpu-dcgm-monitor.json
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "crusoe-npd.fullname" . }}-config

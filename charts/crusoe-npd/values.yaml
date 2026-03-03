@@ -1,0 +1,41 @@
+# Default values for crusoe-npd.
+# Deploys a "lobotomized" Node Problem Detector that ONLY runs custom GPU
+# health plugin monitors (no default system log monitors).
+# The check_gpu_health.sh script is baked into the Docker image, not loaded
+# via ConfigMap. Only the JSON monitor configs are templated here.
+
+image:
+  repository: ghcr.io/crusoe-cloud/crusoe-npd
+  tag: "v0.8.19-crusoe"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Port for NPD metrics/health endpoint (avoids conflict with standard NPD on 20256)
+port: 20258
+
+# Namespace where Argo Workflows are created by autoclusters-controller
+workflowNamespace: crusoe-system
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# Plugin configuration
+plugin:
+  invokeInterval: "60s"
+  timeout: "10s"
+  maxOutputLength: 256
+  concurrency: 1
+  skipInitialStatus: true
+
+# Run on all worker nodes
+tolerations:
+  - operator: Exists
+
+nodeSelector: {}
