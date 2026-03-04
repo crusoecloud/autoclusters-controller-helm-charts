@@ -38,10 +38,6 @@ argo-workflows:
 workflowTemplates:
   enabled: true
 
-# NCCL tests image (pre-built with all_reduce_perf binary)
-ncclTests:
-  image: ""  # Required: set at install time
-
 # PriorityClass for GPU test workflows
 priorityClass:
   create: true

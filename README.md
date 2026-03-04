@@ -20,8 +20,7 @@ Charts are published as OCI artifacts to `ghcr.io/crusoe-cloud/autoclusters-cont
 helm install autoclusters-argo-workflows \
   oci://ghcr.io/crusoe-cloud/autoclusters-controller-helm-charts/autoclusters-argo-workflows \
   --version 0.1.0 \
-  -n crusoe-system --create-namespace \
-  --set ncclTests.image=ghcr.io/crusoe-cloud/nccl-tests:latest
+  -n crusoe-system --create-namespace
 ```
 
 ### Install AutoClusters Controller
@@ -50,7 +49,6 @@ Container images are built from the private `autoclusters-controller` repo and p
 |-------|-------------|
 | `ghcr.io/crusoe-cloud/autoclusters-controller` | Controller binary |
 | `ghcr.io/crusoe-cloud/crusoe-npd` | NPD with GPU health check script |
-| `ghcr.io/crusoe-cloud/nccl-tests` | NCCL all_reduce_perf test binary |
 
 ## CI/CD
 
