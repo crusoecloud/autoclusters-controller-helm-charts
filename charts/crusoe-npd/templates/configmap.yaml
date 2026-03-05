@@ -21,7 +21,7 @@ data:
             {
                 "type": "GPUDCGMUnhealthy",
                 "reason": "GPUDCGMTestPassed",
-                "message": "GPU DCGM Level 3 diagnostics passed"
+                "message": "GPU DCGM Level 2 diagnostics passed"
             }
         ],
         "rules": [
@@ -30,7 +30,35 @@ data:
                 "condition": "GPUDCGMUnhealthy",
                 "reason": "GPUDCGMTestFailed",
                 "path": "/config/plugin/check_gpu_health.sh",
-                "args": ["gpu-dcgm-diag"]
+                "args": ["gpu-dcgm-diag", "GPUDCGMUnhealthy"]
+            }
+        ]
+    }
+  nvbandwidth-monitor.json: |
+    {
+        "plugin": "custom",
+        "pluginConfig": {
+            "invoke_interval": {{ .Values.plugin.invokeInterval | quote }},
+            "timeout": {{ .Values.plugin.timeout | quote }},
+            "max_output_length": {{ .Values.plugin.maxOutputLength }},
+            "concurrency": {{ .Values.plugin.concurrency }},
+            "skip_initial_status": {{ .Values.plugin.skipInitialStatus }}
+        },
+        "source": "gpu-health-monitor",
+        "conditions": [
+            {
+                "type": "GPUNVBandwidthUnhealthy",
+                "reason": "NVBandwidthTestPassed",
+                "message": "NVBandwidth test passed"
+            }
+        ],
+        "rules": [
+            {
+                "type": "permanent",
+                "condition": "GPUNVBandwidthUnhealthy",
+                "reason": "NVBandwidthTestFailed",
+                "path": "/config/plugin/check_gpu_health.sh",
+                "args": ["nvbandwidth", "GPUNVBandwidthUnhealthy"]
             }
         ]
     }

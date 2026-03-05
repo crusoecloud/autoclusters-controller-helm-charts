@@ -26,20 +26,69 @@ spec:
           - |
             set -e
 
-            echo "=== DCGM Level 3 Diagnostics ==="
-            echo "Running comprehensive GPU diagnostics (stress test, memory, PCIe, NVLink, ECC)..."
+            echo "=== DCGM Level 2 Diagnostics ==="
+            echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
 
-            # Run Level 3 DCGMI diagnostics — includes sustained stress test,
-            # full memory scan, PCIe bandwidth, NVLink pairwise bandwidth, ECC checks
-            OUTPUT=$(dcgmi diag -r 3 2>&1) || true
+            # Run Level 2 DCGMI diagnostics — deployment checks:
+            # memory bandwidth, PCIe/NVLink integration, ECC checks
+            OUTPUT=$(dcgmi diag -r 2 2>&1) || true
             echo "$OUTPUT"
 
             if echo "$OUTPUT" | grep -qE "Fail|Warn"; then
-              echo "One or more GPUs failed Level 3 diagnostics"
+              echo "One or more GPUs failed Level 2 diagnostics"
               exit 1
             fi
 
-            echo "All GPUs passed Level 3 diagnostics"
+            echo "All GPUs passed Level 2 diagnostics"
+        resources:
+          limits:
+            cpu: "1"
+            nvidia.com/gpu: "8"
+          requests:
+            cpu: "1"
+            nvidia.com/gpu: "8"
+      continueOn:
+        failed: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: nvbandwidth
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: autoclusters
+    test-type: gpu
+spec:
+  activeDeadlineSeconds: 1800
+  entrypoint: run-test
+  arguments:
+    parameters:
+      - name: nodeName
+      - name: sku
+  podSpecPatch: |
+    priorityClassName: {{ .Values.priorityClass.name }}
+  templates:
+    - name: run-test
+      container:
+        image: nvcr.io/nvidia/nvbandwidth:v0.5
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            set -e
+
+            echo "=== NVBandwidth Test ==="
+            echo "Running NVLink bandwidth test (device-to-device memcpy)..."
+
+            # Run nvbandwidth device-to-device copy test to verify NVLink health
+            OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce -v 2>&1) || true
+            echo "$OUTPUT"
+
+            if echo "$OUTPUT" | grep -qiE "error|fail"; then
+              echo "NVBandwidth test failed"
+              exit 1
+            fi
+
+            echo "NVBandwidth test passed"
         resources:
           limits:
             cpu: "1"
