@@ -1,6 +1,6 @@
 # Default values for autoclusters-controller.
 
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: ghcr.io/crusoe-cloud/autoclusters-controller
@@ -46,7 +46,8 @@ affinity: {}
 
 # Controller configuration
 controller:
-  leaderElect: false
+  # Required for multi-replica deployment to prevent duplicate workflow submissions.
+  leaderElect: true
   metrics:
     enabled: true
     bindAddress: ":8443"

@@ -29,6 +29,7 @@ resources:
 # Plugin configuration
 plugin:
   invokeInterval: "60s"
+  # Timeout for the shell script invocation (kubectl get workflow), not for the actual GPU test duration.
   timeout: "10s"
   maxOutputLength: 256
   concurrency: 1

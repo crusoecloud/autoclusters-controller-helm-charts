@@ -23,6 +23,7 @@ publish-charts:
   image: alpine/helm:3.14
   script:
     - echo "${GHCR_TOKEN}" | helm registry login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+    - mkdir -p /tmp/packages
     - helm package charts/autoclusters-controller -d /tmp/packages/
     - helm package charts/crusoe-npd -d /tmp/packages/
     - helm dependency update charts/autoclusters-argo-workflows

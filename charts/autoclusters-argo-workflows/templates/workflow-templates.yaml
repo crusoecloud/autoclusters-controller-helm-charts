@@ -43,10 +43,14 @@ spec:
         resources:
           limits:
             cpu: "1"
+            # Todo: support different skus
+            # The controller also hardcodes 8 in the podSpecPatch at submission time.
             nvidia.com/gpu: "8"
           requests:
             cpu: "1"
             nvidia.com/gpu: "8"
+      # NPD reads individual step phases to determine pass/fail per test.
+      # Without continueOn the workflow short-circuits on first failure and skips remaining tests.
       continueOn:
         failed: true
 ---
@@ -92,10 +96,14 @@ spec:
         resources:
           limits:
             cpu: "1"
+            # All current Crusoe GPU SKUs have 8 GPUs per node.
+            # The controller also hardcodes 8 in the podSpecPatch at submission time.
             nvidia.com/gpu: "8"
           requests:
             cpu: "1"
             nvidia.com/gpu: "8"
+      # NPD reads individual step phases to determine pass/fail per test.
+      # Without continueOn the workflow short-circuits on first failure and skips remaining tests.
       continueOn:
         failed: true
 {{- end }}
