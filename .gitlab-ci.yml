@@ -8,7 +8,7 @@ variables:
 
 helm-lint:
   stage: lint
-  image: alpine/helm:3.14
+  image: alpine/helm:3.16
   script:
     - helm lint charts/autoclusters-controller
     - helm lint charts/crusoe-npd
@@ -20,7 +20,7 @@ helm-lint:
 
 publish-charts:
   stage: publish
-  image: alpine/helm:3.14
+  image: alpine/helm:3.16
   script:
     - echo "${GHCR_TOKEN}" | helm registry login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
     - mkdir -p /tmp/packages
