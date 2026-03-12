@@ -27,6 +27,12 @@ spec:
             set -e
 
             echo "=== DCGM Level 2 Diagnostics ==="
+
+            # libnuma is required for PCIe bandwidth tests (BwChecker) to bind
+            # NUMA nodes. Without it, BwChecker spins forever at 0% GPU utilization.
+            echo "Installing libnuma..."
+            apt-get update -qq && apt-get install -y -qq libnuma1 > /dev/null 2>&1
+
             echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
 
             # Detect GPU count for -i flag (cloud VMs don't expose NvSwitch
@@ -40,7 +46,7 @@ spec:
             # memory bandwidth, PCIe/NVLink integration, ECC checks
             # -i gpu:N targets only GPUs, skipping NvSwitch entity checks
             # tee streams output in real-time while capturing for pass/fail check
-            OUTPUT=$(dcgmi diag -r 2 -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || true
+            OUTPUT=$(dcgmi diag -r 2 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || true
 
             if echo "$OUTPUT" | grep -qE "Fail|Warn"; then
               echo "One or more GPUs failed Level 2 diagnostics"
