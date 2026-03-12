@@ -87,26 +87,73 @@ spec:
     priorityClassName: {{ .Values.priorityClass.name }}
   templates:
     - name: run-test
+      inputs:
+        parameters:
+          - name: nodeName
+          - name: sku
       container:
-        image: nvcr.io/nvidia/nvbandwidth:v0.5
+        image: ghcr.io/crusoe-cloud/nvbandwidth:v0.8
         command: ["/bin/bash", "-c"]
         args:
           - |
             set -e
 
             echo "=== NVBandwidth Test ==="
-            echo "Running NVLink bandwidth test (device-to-device memcpy)..."
+            SKU="{{`{{inputs.parameters.sku}}`}}"
 
-            # Run nvbandwidth device-to-device copy test to verify NVLink health
-            # tee streams output in real-time while capturing for pass/fail check
-            OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce -v 2>&1 | tee /dev/stderr) || true
+            # Per-SKU NVLink bandwidth thresholds (GB/s per GPU pair).
+            # Baselines measured on known-good hardware, threshold = baseline × 0.8 alpha.
+            # Baseline sources:
+            #   A100 SXM: ~72 GB/s (NVLink 3.0, 4 links/pair)
+            #   H100 SXM: ~395 GB/s (NVLink 4.0, measured on autocluster-active-testing)
+            #   H200 SXM: ~395 GB/s (same NVLink 4.0 as H100)
+            case "$SKU" in
+              *a100*sxm*) THRESHOLD=58 ;;
+              *h100*sxm*) THRESHOLD=316 ;;
+              *h200*sxm*) THRESHOLD=316 ;;
+              *) echo "WARNING: Unknown SKU '$SKU', using conservative threshold"; THRESHOLD=50 ;;
+            esac
 
-            if echo "$OUTPUT" | grep -qiE "error|fail"; then
-              echo "NVBandwidth test failed"
+            echo "SKU: $SKU | Per-pair threshold: ${THRESHOLD} GB/s"
+            echo "Running device_to_device_memcpy_read_ce..."
+
+            OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce 2>&1 | tee /dev/stderr) || true
+
+            # Check for runtime errors first
+            if echo "$OUTPUT" | grep -qiE "^error|cuda error|nvml error"; then
+              echo "NVBandwidth FAILED: runtime error detected"
               exit 1
             fi
 
-            echo "NVBandwidth test passed"
+            # Parse bandwidth matrix: lines starting with a GPU index (e.g. " 0  395.07 ...")
+            # Extract numeric values and compare each against the threshold
+            FAILED=0
+            PAIR_COUNT=0
+            MIN_BW=999999
+            while IFS= read -r line; do
+              for val in $line; do
+                case "$val" in
+                  [0-9]*.[0-9]*) ;;  # match float values only
+                  *) continue ;;
+                esac
+                PAIR_COUNT=$((PAIR_COUNT + 1))
+                if awk "BEGIN{exit(!($val < $THRESHOLD))}"; then
+                  echo "FAIL: GPU pair bandwidth ${val} GB/s < threshold ${THRESHOLD} GB/s"
+                  FAILED=1
+                fi
+                # Track minimum
+                MIN_BW=$(awk "BEGIN{print ($val < $MIN_BW) ? $val : $MIN_BW}" <<< "")
+              done
+            done <<< "$(echo "$OUTPUT" | grep -E '^ [0-9]')"
+
+            echo "Checked $PAIR_COUNT GPU pairs, min bandwidth: ${MIN_BW} GB/s"
+
+            if [ "$FAILED" -eq 1 ]; then
+              echo "NVBandwidth FAILED: one or more GPU pairs below ${THRESHOLD} GB/s threshold"
+              exit 1
+            fi
+
+            echo "NVBandwidth PASSED: all GPU pairs >= ${THRESHOLD} GB/s"
         resources:
           limits:
             cpu: "1"
