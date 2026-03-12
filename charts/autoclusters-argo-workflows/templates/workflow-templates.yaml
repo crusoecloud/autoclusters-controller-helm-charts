@@ -30,8 +30,10 @@ spec:
 
             # libnuma is required for PCIe bandwidth tests (BwChecker) to bind
             # NUMA nodes. Without it, BwChecker spins forever at 0% GPU utilization.
+            # ForceIPv4: some cluster DNS resolvers return IPv6-only records for
+            # archive.ubuntu.com but nodes lack IPv6 connectivity, causing apt to hang.
             echo "Installing libnuma..."
-            apt-get update -qq && apt-get install -y -qq libnuma1 > /dev/null 2>&1
+            apt-get -o Acquire::ForceIPv4=true update -qq && apt-get -o Acquire::ForceIPv4=true install -y -qq libnuma1 > /dev/null 2>&1
 
             echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
 
