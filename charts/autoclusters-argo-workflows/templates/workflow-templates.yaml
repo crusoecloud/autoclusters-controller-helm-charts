@@ -9,7 +9,7 @@ metadata:
     app: autoclusters
     test-type: gpu
 spec:
-  activeDeadlineSeconds: 1800
+  activeDeadlineSeconds: 5400
   entrypoint: run-test
   arguments:
     parameters:
@@ -29,10 +29,18 @@ spec:
             echo "=== DCGM Level 2 Diagnostics ==="
             echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
 
+            # Detect GPU count for -i flag (cloud VMs don't expose NvSwitch
+            # devices, so we must target GPUs explicitly to avoid DCGM hanging
+            # on NvSwitch attachment)
+            GPU_COUNT=$(nvidia-smi -L | wc -l)
+            GPU_IDS=$(seq -s, 0 $((GPU_COUNT - 1)))
+            echo "Detected $GPU_COUNT GPUs, testing gpu:$GPU_IDS"
+
             # Run Level 2 DCGMI diagnostics — deployment checks:
             # memory bandwidth, PCIe/NVLink integration, ECC checks
-            OUTPUT=$(dcgmi diag -r 2 2>&1) || true
-            echo "$OUTPUT"
+            # -i gpu:N targets only GPUs, skipping NvSwitch entity checks
+            # tee streams output in real-time while capturing for pass/fail check
+            OUTPUT=$(dcgmi diag -r 2 -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || true
 
             if echo "$OUTPUT" | grep -qE "Fail|Warn"; then
               echo "One or more GPUs failed Level 2 diagnostics"
@@ -63,7 +71,7 @@ metadata:
     app: autoclusters
     test-type: gpu
 spec:
-  activeDeadlineSeconds: 1800
+  activeDeadlineSeconds: 5400
   entrypoint: run-test
   arguments:
     parameters:
@@ -84,8 +92,8 @@ spec:
             echo "Running NVLink bandwidth test (device-to-device memcpy)..."
 
             # Run nvbandwidth device-to-device copy test to verify NVLink health
-            OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce -v 2>&1) || true
-            echo "$OUTPUT"
+            # tee streams output in real-time while capturing for pass/fail check
+            OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce -v 2>&1 | tee /dev/stderr) || true
 
             if echo "$OUTPUT" | grep -qiE "error|fail"; then
               echo "NVBandwidth test failed"
