@@ -54,7 +54,17 @@ spec:
             # memory bandwidth, PCIe/NVLink integration, ECC checks
             # -i gpu:N targets only GPUs, skipping NvSwitch entity checks
             # tee streams output in real-time while capturing for pass/fail check
-            OUTPUT=$(dcgmi diag -r 2 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || true
+            DCGM_EXIT=0
+            OUTPUT=$(dcgmi diag -r 2 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || DCGM_EXIT=$?
+
+            # dcgmi exit codes (from source):
+            #   0 (DCGM_ST_OK)              = all tests passed
+            #   226 (DCGM_ST_NVVS_ERROR)    = test failures detected
+            #   Other non-zero              = infra error (timeout, killed, bad params)
+            # We check both the exit code AND grep for Fail/Warn in case they diverge.
+            if [ "$DCGM_EXIT" -ne 0 ]; then
+              echo "dcgmi exited with code $DCGM_EXIT"
+            fi
 
             # Parse DCGM table output for structured results.
             # dcgmi diag result strings (from source): "Pass", "Fail", "Warn", "Skip", "Not Run"
@@ -146,6 +156,13 @@ spec:
               [ -n "$FAILED_TESTS_JSON" ] && FAILED_TESTS_JSON="${FAILED_TESTS_JSON},"
               FAILED_TESTS_JSON="${FAILED_TESTS_JSON}\"${t}\""
             done
+
+            # Belt-and-suspenders: also fail if dcgmi exited non-zero even if
+            # we didn't find Fail/Warn in the output (e.g. exit code 226 = NVVS error)
+            if [ "$DCGM_EXIT" -ne 0 ] && [ "$OVERALL_FAIL" -eq 0 ]; then
+              echo "WARNING: dcgmi exited $DCGM_EXIT but no Fail/Warn found in output"
+              OVERALL_FAIL=1
+            fi
 
             if [ "$OVERALL_FAIL" -eq 1 ]; then
               RESULT_STATUS="fail"
