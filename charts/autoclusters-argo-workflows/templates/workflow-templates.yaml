@@ -19,6 +19,12 @@ spec:
     priorityClassName: {{ .Values.priorityClass.name }}
   templates:
     - name: run-test
+      outputs:
+        parameters:
+          - name: test-results
+            valueFrom:
+              path: /tmp/test-results.json
+              default: '{"status":"error","error":"output file not written"}'
       container:
         image: nvcr.io/nvidia/cloud-native/dcgm:4.2.3-1-ubuntu22.04
         command: ["/bin/bash", "-c"]
@@ -50,12 +56,115 @@ spec:
             # tee streams output in real-time while capturing for pass/fail check
             OUTPUT=$(dcgmi diag -r 2 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || true
 
-            if echo "$OUTPUT" | grep -qE "Fail|Warn"; then
-              echo "One or more GPUs failed Level 2 diagnostics"
+            # Parse DCGM table output for structured results.
+            # dcgmi diag result strings (from source): "Pass", "Fail", "Warn", "Skip", "Not Run"
+            # Output sections: Deployment (software), Hardware (memory), Integration (pcie)
+            CURRENT_SUBTEST=""
+            OVERALL_FAIL=0
+            FAILED_GPU_COUNT=0
+
+            # Per-GPU tracking: arrays indexed by GPU ID
+            declare -A GPU_STATUS       # gpu_id -> "pass"|"fail"
+            declare -A GPU_SUBTESTS     # "gpu_id:subtest" -> "pass"|"fail"
+            declare -A GPU_PCIE_G2H     # gpu_id -> GPU-to-Host bandwidth
+            declare -A GPU_PCIE_H2G     # gpu_id -> Host-to-GPU bandwidth
+            declare -A GPU_PCIE_BIDIR   # gpu_id -> bidirectional bandwidth
+
+            # Initialize all GPUs as pass
+            for i in $(seq 0 $((GPU_COUNT - 1))); do
+              GPU_STATUS[$i]="pass"
+            done
+
+            while IFS= read -r line; do
+              # Track current section by header lines
+              if echo "$line" | grep -q "Deployment"; then
+                CURRENT_SUBTEST="software"
+              elif echo "$line" | grep -q "Hardware"; then
+                CURRENT_SUBTEST="memory"
+              elif echo "$line" | grep -q "Integration"; then
+                CURRENT_SUBTEST="pcie"
+              fi
+
+              # Extract per-GPU status: "GPU0: Pass" or "GPU1: Fail"
+              if echo "$line" | grep -qE "GPU[0-9]+:"; then
+                GPU_ID=$(echo "$line" | grep -oE "GPU([0-9]+)" | grep -oE "[0-9]+")
+                RESULT=$(echo "$line" | grep -oE "(Pass|Fail|Warn|Skip)" || true)
+                if [ -n "$GPU_ID" ] && [ -n "$CURRENT_SUBTEST" ]; then
+                  if [ "$RESULT" = "Fail" ] || [ "$RESULT" = "Warn" ]; then
+                    GPU_SUBTESTS["${GPU_ID}:${CURRENT_SUBTEST}"]="fail"
+                    GPU_STATUS[$GPU_ID]="fail"
+                  elif [ "$RESULT" = "Pass" ]; then
+                    GPU_SUBTESTS["${GPU_ID}:${CURRENT_SUBTEST}"]="pass"
+                  fi
+                fi
+              fi
+
+              # Extract PCIe bandwidth values from Info lines
+              if echo "$line" | grep -q "GPU to Host bandwidth"; then
+                GPU_ID=$(echo "$line" | grep -oE "GPU([0-9]+)" | grep -oE "[0-9]+")
+                BW=$(echo "$line" | grep -oE "[0-9]+\.[0-9]+ GB/s" | grep -oE "[0-9]+\.[0-9]+")
+                [ -n "$GPU_ID" ] && [ -n "$BW" ] && GPU_PCIE_G2H[$GPU_ID]="$BW"
+              elif echo "$line" | grep -q "Host to GPU bandwidth"; then
+                GPU_ID=$(echo "$line" | grep -oE "GPU([0-9]+)" | grep -oE "[0-9]+")
+                BW=$(echo "$line" | grep -oE "[0-9]+\.[0-9]+ GB/s" | grep -oE "[0-9]+\.[0-9]+")
+                [ -n "$GPU_ID" ] && [ -n "$BW" ] && GPU_PCIE_H2G[$GPU_ID]="$BW"
+              elif echo "$line" | grep -q "bidirectional bandwidth"; then
+                GPU_ID=$(echo "$line" | grep -oE "GPU([0-9]+)" | grep -oE "[0-9]+")
+                BW=$(echo "$line" | grep -oE "[0-9]+\.[0-9]+ GB/s" | grep -oE "[0-9]+\.[0-9]+")
+                [ -n "$GPU_ID" ] && [ -n "$BW" ] && GPU_PCIE_BIDIR[$GPU_ID]="$BW"
+              fi
+            done <<< "$OUTPUT"
+
+            # Build JSON output
+            GPUS_JSON=""
+            FAILED_TESTS_SET=""
+            for i in $(seq 0 $((GPU_COUNT - 1))); do
+              [ -n "$GPUS_JSON" ] && GPUS_JSON="${GPUS_JSON},"
+              SW_STATUS="${GPU_SUBTESTS[${i}:software]:-pass}"
+              MEM_STATUS="${GPU_SUBTESTS[${i}:memory]:-pass}"
+              PCIE_STATUS="${GPU_SUBTESTS[${i}:pcie]:-pass}"
+              G2H="${GPU_PCIE_G2H[$i]:-0}"
+              H2G="${GPU_PCIE_H2G[$i]:-0}"
+              BIDIR="${GPU_PCIE_BIDIR[$i]:-0}"
+
+              if [ "${GPU_STATUS[$i]}" = "fail" ]; then
+                FAILED_GPU_COUNT=$((FAILED_GPU_COUNT + 1))
+                OVERALL_FAIL=1
+                # Track which subtests failed
+                [ "$SW_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} software"
+                [ "$MEM_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} memory"
+                [ "$PCIE_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} pcie"
+              fi
+
+              GPUS_JSON="${GPUS_JSON}{\"gpu_id\":${i},\"status\":\"${GPU_STATUS[$i]}\",\"tests\":{\"software\":\"${SW_STATUS}\",\"memory\":\"${MEM_STATUS}\",\"pcie\":\"${PCIE_STATUS}\"},\"pcie_gpu_to_host_gbps\":${G2H},\"pcie_host_to_gpu_gbps\":${H2G},\"pcie_bidirectional_gbps\":${BIDIR}}"
+            done
+
+            # Deduplicate failed test names
+            FAILED_TESTS_JSON=""
+            for t in $(echo "$FAILED_TESTS_SET" | tr ' ' '\n' | sort -u); do
+              [ -z "$t" ] && continue
+              [ -n "$FAILED_TESTS_JSON" ] && FAILED_TESTS_JSON="${FAILED_TESTS_JSON},"
+              FAILED_TESTS_JSON="${FAILED_TESTS_JSON}\"${t}\""
+            done
+
+            if [ "$OVERALL_FAIL" -eq 1 ]; then
+              RESULT_STATUS="fail"
+              SUMMARY="${FAILED_GPU_COUNT}/${GPU_COUNT} GPUs failed Level 2 diagnostics"
+            else
+              RESULT_STATUS="pass"
+              SUMMARY="All GPUs passed Level 2 diagnostics"
+            fi
+
+            cat > /tmp/test-results.json <<RESULTS_EOF
+            {"status":"${RESULT_STATUS}","gpu_count":${GPU_COUNT},"subtests":["software","memory","pcie"],"gpus":[${GPUS_JSON}],"failed_gpu_count":${FAILED_GPU_COUNT},"failed_tests":[${FAILED_TESTS_JSON}],"summary":"${SUMMARY}"}
+            RESULTS_EOF
+
+            if [ "$OVERALL_FAIL" -eq 1 ]; then
+              echo "$SUMMARY"
               exit 1
             fi
 
-            echo "All GPUs passed Level 2 diagnostics"
+            echo "$SUMMARY"
         resources:
           limits:
             cpu: "1"
@@ -93,6 +202,12 @@ spec:
         parameters:
           - name: nodeName
           - name: sku
+      outputs:
+        parameters:
+          - name: test-results
+            valueFrom:
+              path: /tmp/test-results.json
+              default: '{"status":"error","error":"output file not written"}'
       container:
         image: ghcr.io/crusoe-cloud/nvbandwidth:v0.8
         command: ["/bin/bash", "-c"]
@@ -121,15 +236,20 @@ spec:
 
             OUTPUT=$(nvbandwidth -t device_to_device_memcpy_read_ce 2>&1 | tee /dev/stderr) || true
 
-            # Check for runtime errors first
-            if echo "$OUTPUT" | grep -qiE "^error|cuda error|nvml error"; then
+            # Check for runtime errors first.
+            # nvbandwidth error formats (from source): [CUDA_ERROR_*], NVML_ERROR:, ASSERT
+            if echo "$OUTPUT" | grep -qiE "CUDA_ERROR|NVML_ERROR|^ASSERT"; then
               echo "NVBandwidth FAILED: runtime error detected"
+              cat > /tmp/test-results.json <<RESULTS_EOF
+            {"status":"fail","threshold_gbps":${THRESHOLD},"min_bandwidth_gbps":0,"gpu_pair_count":0,"failed_pair_count":0,"sku":"${SKU}","error":"runtime error"}
+            RESULTS_EOF
               exit 1
             fi
 
             # Parse bandwidth matrix: lines starting with a GPU index (e.g. " 0  395.07 ...")
             # Extract numeric values and compare each against the threshold
             FAILED=0
+            FAILED_COUNT=0
             PAIR_COUNT=0
             MIN_BW=999999
             while IFS= read -r line; do
@@ -142,6 +262,7 @@ spec:
                 if awk "BEGIN{exit(!($val < $THRESHOLD))}"; then
                   echo "FAIL: GPU pair bandwidth ${val} GB/s < threshold ${THRESHOLD} GB/s"
                   FAILED=1
+                  FAILED_COUNT=$((FAILED_COUNT + 1))
                 fi
                 # Track minimum
                 MIN_BW=$(awk "BEGIN{print ($val < $MIN_BW) ? $val : $MIN_BW}" <<< "")
@@ -149,6 +270,16 @@ spec:
             done <<< "$(echo "$OUTPUT" | grep -E '^ [0-9]')"
 
             echo "Checked $PAIR_COUNT GPU pairs, min bandwidth: ${MIN_BW} GB/s"
+
+            # Write structured results for controller metrics
+            if [ "$FAILED" -eq 1 ]; then
+              RESULT_STATUS="fail"
+            else
+              RESULT_STATUS="pass"
+            fi
+            cat > /tmp/test-results.json <<RESULTS_EOF
+            {"status":"${RESULT_STATUS}","threshold_gbps":${THRESHOLD},"min_bandwidth_gbps":${MIN_BW},"gpu_pair_count":${PAIR_COUNT},"failed_pair_count":${FAILED_COUNT},"sku":"${SKU}"}
+            RESULTS_EOF
 
             if [ "$FAILED" -eq 1 ]; then
               echo "NVBandwidth FAILED: one or more GPU pairs below ${THRESHOLD} GB/s threshold"
