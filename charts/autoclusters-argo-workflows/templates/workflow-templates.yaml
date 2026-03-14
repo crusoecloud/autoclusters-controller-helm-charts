@@ -26,20 +26,13 @@ spec:
               path: /tmp/test-results.json
               default: '{"status":"error","error":"output file not written"}'
       container:
-        image: nvcr.io/nvidia/cloud-native/dcgm:4.2.3-1-ubuntu22.04
+        image: ghcr.io/crusoe-cloud/crusoe-dcgm:0.1.0
         command: ["/bin/bash", "-c"]
         args:
           - |
             set -e
 
             echo "=== DCGM Level 2 Diagnostics ==="
-
-            # libnuma is required for PCIe bandwidth tests (BwChecker) to bind
-            # NUMA nodes. Without it, BwChecker spins forever at 0% GPU utilization.
-            # ForceIPv4: some cluster DNS resolvers return IPv6-only records for
-            # archive.ubuntu.com but nodes lack IPv6 connectivity, causing apt to hang.
-            echo "Installing libnuma..."
-            apt-get -o Acquire::ForceIPv4=true update -qq && apt-get -o Acquire::ForceIPv4=true install -y -qq libnuma1 > /dev/null 2>&1
 
             echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
 
