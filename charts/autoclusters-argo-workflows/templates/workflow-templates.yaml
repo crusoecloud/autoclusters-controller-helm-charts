@@ -236,13 +236,13 @@ spec:
             SKU="{{`{{inputs.parameters.sku}}`}}"
 
             # Per-SKU NVLink bandwidth thresholds (GB/s per GPU pair).
-            # Baselines measured on known-good hardware, threshold = baseline × 0.8 alpha.
+            # Baselines from nvbandwidth device_to_device_memcpy_read_ce, threshold = baseline × 0.8.
             # Baseline sources:
-            #   A100 SXM: ~72 GB/s (NVLink 3.0, 4 links/pair)
-            #   H100 SXM: ~395 GB/s (NVLink 4.0, measured on autocluster-active-testing)
+            #   A100 SXM: ~275 GB/s (NVLink 3.0, measured on pphelan-doca-test Mar 2026)
+            #   H100 SXM: ~395 GB/s (NVLink 4.0, measured on autocluster-active-testing Mar 2026)
             #   H200 SXM: ~395 GB/s (same NVLink 4.0 as H100)
             case "$SKU" in
-              *a100*sxm*) THRESHOLD=58 ;;
+              *a100*sxm*) THRESHOLD=220 ;;
               *h100*sxm*) THRESHOLD=316 ;;
               *h200*sxm*) THRESHOLD=316 ;;
               *) echo "WARNING: Unknown SKU '$SKU', using conservative threshold"; THRESHOLD=50 ;;
