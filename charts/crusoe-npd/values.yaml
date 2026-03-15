@@ -7,7 +7,9 @@
 image:
   repository: ghcr.io/crusoe-cloud/crusoe-npd
   tag: "v0.8.19-crusoe"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
+  # Optional: pin to a specific image digest (overrides tag when set)
+  digest: ""
 
 nameOverride: ""
 fullnameOverride: ""

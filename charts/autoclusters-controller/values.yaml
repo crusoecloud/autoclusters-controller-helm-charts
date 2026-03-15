@@ -4,9 +4,11 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/crusoe-cloud/autoclusters-controller
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
+  # Optional: pin to a specific image digest (overrides tag when set)
+  digest: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -21,7 +23,12 @@ podAnnotations: {}
 
 podSecurityContext: {}
 
-securityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
 
 service:
   type: ClusterIP

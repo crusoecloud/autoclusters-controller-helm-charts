@@ -26,7 +26,18 @@ spec:
               path: /tmp/test-results.json
               default: '{"status":"error","error":"output file not written"}'
       container:
-        image: ghcr.io/crusoe-cloud/crusoe-dcgm:0.1.0
+        {{- if .Values.images.dcgm.digest }}
+        image: {{ .Values.images.dcgm.repository }}@{{ .Values.images.dcgm.digest }}
+        {{- else }}
+        image: {{ .Values.images.dcgm.repository }}:{{ .Values.images.dcgm.tag }}
+        {{- end }}
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
         command: ["/bin/bash", "-c"]
         args:
           - |
@@ -218,7 +229,18 @@ spec:
               path: /tmp/test-results.json
               default: '{"status":"error","error":"output file not written"}'
       container:
-        image: ghcr.io/crusoe-cloud/nvbandwidth:v0.8
+        {{- if .Values.images.nvbandwidth.digest }}
+        image: {{ .Values.images.nvbandwidth.repository }}@{{ .Values.images.nvbandwidth.digest }}
+        {{- else }}
+        image: {{ .Values.images.nvbandwidth.repository }}:{{ .Values.images.nvbandwidth.tag }}
+        {{- end }}
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
         command: ["/bin/bash", "-c"]
         args:
           - |

@@ -52,6 +52,19 @@ gpuResources:
 deadlines:
   templateDeadlineSeconds: 5400
 
+# Container images for GPU test templates
+images:
+  dcgm:
+    repository: ghcr.io/crusoe-cloud/crusoe-dcgm
+    tag: "0.1.0"
+    # Optional: pin to a specific image digest (overrides tag when set)
+    digest: ""
+  nvbandwidth:
+    repository: ghcr.io/crusoe-cloud/nvbandwidth
+    tag: "v0.8"
+    # Optional: pin to a specific image digest (overrides tag when set)
+    digest: ""
+
 # PriorityClass for GPU test workflows
 priorityClass:
   create: true

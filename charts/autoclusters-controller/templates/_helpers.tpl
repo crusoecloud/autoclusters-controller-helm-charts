@@ -53,6 +53,17 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/*
 Create the name of the service account to use
 */}}
+{{/*
+Return the image reference: use digest if set, otherwise tag (default appVersion).
+*/}}
+{{- define "autoclusters-controller.image" -}}
+{{- if .Values.image.digest -}}
+{{ .Values.image.repository }}@{{ .Values.image.digest }}
+{{- else -}}
+{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- end -}}
+{{- end }}
+
 {{- define "autoclusters-controller.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
 {{- default (include "autoclusters-controller.fullname" .) .Values.serviceAccount.name }}
