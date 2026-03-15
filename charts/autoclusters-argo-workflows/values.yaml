@@ -38,6 +38,20 @@ argo-workflows:
 workflowTemplates:
   enabled: true
 
+# GPU resource configuration
+# The controller dynamically detects actual GPU count from node capacity
+# and overrides this via workflow-level podSpecPatch at submission time.
+# This value serves as the default for standalone template usage.
+gpuResources:
+  defaultGPUCount: 8
+
+# Deadline configuration
+# Per-template deadline caps individual test execution time.
+# The controller sets a separate workflow-level deadline (default 7200s)
+# that caps total workflow runtime across all sequential tests.
+deadlines:
+  templateDeadlineSeconds: 5400
+
 # PriorityClass for GPU test workflows
 priorityClass:
   create: true

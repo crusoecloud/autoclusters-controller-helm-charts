@@ -9,7 +9,7 @@ metadata:
     app: autoclusters
     test-type: gpu
 spec:
-  activeDeadlineSeconds: 5400
+  activeDeadlineSeconds: {{ .Values.deadlines.templateDeadlineSeconds }}
   entrypoint: run-test
   arguments:
     parameters:
@@ -178,12 +178,11 @@ spec:
         resources:
           limits:
             cpu: "1"
-            # Todo: support different skus
-            # The controller also hardcodes 8 in the podSpecPatch at submission time.
-            nvidia.com/gpu: "8"
+            # Default GPU count. The controller overrides per-node via workflow-level podSpecPatch.
+            nvidia.com/gpu: "{{ .Values.gpuResources.defaultGPUCount }}"
           requests:
             cpu: "1"
-            nvidia.com/gpu: "8"
+            nvidia.com/gpu: "{{ .Values.gpuResources.defaultGPUCount }}"
       # NPD reads individual step phases to determine pass/fail per test.
       # Without continueOn the workflow short-circuits on first failure and skips remaining tests.
       continueOn:
@@ -198,7 +197,7 @@ metadata:
     app: autoclusters
     test-type: gpu
 spec:
-  activeDeadlineSeconds: 5400
+  activeDeadlineSeconds: {{ .Values.deadlines.templateDeadlineSeconds }}
   entrypoint: run-test
   arguments:
     parameters:
@@ -300,12 +299,11 @@ spec:
         resources:
           limits:
             cpu: "1"
-            # All current Crusoe GPU SKUs have 8 GPUs per node.
-            # The controller also hardcodes 8 in the podSpecPatch at submission time.
-            nvidia.com/gpu: "8"
+            # Default GPU count. The controller overrides per-node via workflow-level podSpecPatch.
+            nvidia.com/gpu: "{{ .Values.gpuResources.defaultGPUCount }}"
           requests:
             cpu: "1"
-            nvidia.com/gpu: "8"
+            nvidia.com/gpu: "{{ .Values.gpuResources.defaultGPUCount }}"
       # NPD reads individual step phases to determine pass/fail per test.
       # Without continueOn the workflow short-circuits on first failure and skips remaining tests.
       continueOn:
