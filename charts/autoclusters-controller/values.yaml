@@ -55,6 +55,8 @@ affinity: {}
 controller:
   # Required for multi-replica deployment to prevent duplicate workflow submissions.
   leaderElect: true
+  # Cron schedule for maintenance tests. Default: hourly.
+  schedule: "0 * * * *"
   metrics:
     enabled: true
     bindAddress: ":8443"
