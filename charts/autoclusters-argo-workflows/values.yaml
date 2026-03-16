@@ -56,7 +56,7 @@ deadlines:
 images:
   dcgm:
     repository: ghcr.io/crusoe-cloud/crusoe-dcgm
-    tag: "0.1.0"
+    tag: "1.0.0"
     # Optional: pin to a specific image digest (overrides tag when set)
     digest: ""
   nvbandwidth:
@@ -64,6 +64,18 @@ images:
     tag: "v0.8"
     # Optional: pin to a specific image digest (overrides tag when set)
     digest: ""
+
+# Per-SKU NVLink bandwidth thresholds (GB/s per GPU pair).
+# Used by the nvbandwidth WorkflowTemplate. Pattern is matched against the node SKU label (case-insensitive).
+# Baselines from nvbandwidth device_to_device_memcpy_read_ce, threshold = baseline x 0.8.
+nvlinkThresholds:
+  - pattern: "*a100*sxm*"
+    threshold: 220
+  - pattern: "*h100*sxm*"
+    threshold: 316
+  - pattern: "*h200*sxm*"
+    threshold: 316
+defaultNvlinkThreshold: 50
 
 # PriorityClass for GPU test workflows
 priorityClass:

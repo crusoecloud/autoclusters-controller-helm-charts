@@ -6,59 +6,33 @@ metadata:
   labels:
     {{- include "crusoe-npd.labels" . | nindent 4 }}
 data:
-  gpu-dcgm-monitor.json: |
+  {{- range .Values.monitors }}
+  {{ .name }}-monitor.json: |
     {
         "plugin": "custom",
         "pluginConfig": {
-            "invoke_interval": {{ .Values.plugin.invokeInterval | quote }},
-            "timeout": {{ .Values.plugin.timeout | quote }},
-            "max_output_length": {{ .Values.plugin.maxOutputLength }},
-            "concurrency": {{ .Values.plugin.concurrency }},
-            "skip_initial_status": {{ .Values.plugin.skipInitialStatus }}
+            "invoke_interval": {{ (.invokeInterval | default $.Values.pluginDefaults.invokeInterval) | quote }},
+            "timeout": {{ (.timeout | default $.Values.pluginDefaults.timeout) | quote }},
+            "max_output_length": {{ .maxOutputLength | default $.Values.pluginDefaults.maxOutputLength }},
+            "concurrency": {{ .concurrency | default $.Values.pluginDefaults.concurrency }},
+            "skip_initial_status": {{ .skipInitialStatus | default $.Values.pluginDefaults.skipInitialStatus }}
         },
         "source": "gpu-health-monitor",
         "conditions": [
             {
-                "type": "GPUDCGMUnhealthy",
-                "reason": "GPUDCGMTestPassed",
-                "message": "GPU DCGM Level 2 diagnostics passed"
+                "type": {{ .conditionType | quote }},
+                "reason": {{ .conditionReason | quote }},
+                "message": {{ .conditionMessage | quote }}
             }
         ],
         "rules": [
             {
                 "type": "permanent",
-                "condition": "GPUDCGMUnhealthy",
-                "reason": "GPUDCGMTestFailed",
+                "condition": {{ .conditionType | quote }},
+                "reason": {{ .failedReason | quote }},
                 "path": "/config/plugin/check_gpu_health.sh",
-                "args": ["gpu-dcgm-diag", "GPUDCGMUnhealthy"]
+                "args": [{{ .name | quote }}, {{ .conditionType | quote }}]
             }
         ]
     }
-  nvbandwidth-monitor.json: |
-    {
-        "plugin": "custom",
-        "pluginConfig": {
-            "invoke_interval": {{ .Values.plugin.invokeInterval | quote }},
-            "timeout": {{ .Values.plugin.timeout | quote }},
-            "max_output_length": {{ .Values.plugin.maxOutputLength }},
-            "concurrency": {{ .Values.plugin.concurrency }},
-            "skip_initial_status": {{ .Values.plugin.skipInitialStatus }}
-        },
-        "source": "gpu-health-monitor",
-        "conditions": [
-            {
-                "type": "GPUNVBandwidthUnhealthy",
-                "reason": "NVBandwidthTestPassed",
-                "message": "NVBandwidth test passed"
-            }
-        ],
-        "rules": [
-            {
-                "type": "permanent",
-                "condition": "GPUNVBandwidthUnhealthy",
-                "reason": "NVBandwidthTestFailed",
-                "path": "/config/plugin/check_gpu_health.sh",
-                "args": ["nvbandwidth", "GPUNVBandwidthUnhealthy"]
-            }
-        ]
-    }
+  {{- end }}

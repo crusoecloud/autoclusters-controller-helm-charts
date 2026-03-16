@@ -33,5 +33,8 @@ Common labels
 */}}
 {{- define "autoclusters-argo-workflows.labels" -}}
 helm.sh/chart: {{ include "autoclusters-argo-workflows.chart" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}

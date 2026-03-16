@@ -8,6 +8,7 @@ metadata:
   labels:
     app: autoclusters
     test-type: gpu
+    {{- include "autoclusters-argo-workflows.labels" . | nindent 4 }}
 spec:
   activeDeadlineSeconds: {{ .Values.deadlines.templateDeadlineSeconds }}
   entrypoint: run-test
@@ -206,6 +207,7 @@ metadata:
   labels:
     app: autoclusters
     test-type: gpu
+    {{- include "autoclusters-argo-workflows.labels" . | nindent 4 }}
 spec:
   activeDeadlineSeconds: {{ .Values.deadlines.templateDeadlineSeconds }}
   entrypoint: run-test
@@ -248,16 +250,12 @@ spec:
             SKU="{{`{{inputs.parameters.sku}}`}}"
 
             # Per-SKU NVLink bandwidth thresholds (GB/s per GPU pair).
-            # Baselines from nvbandwidth device_to_device_memcpy_read_ce, threshold = baseline × 0.8.
-            # Baseline sources:
-            #   A100 SXM: ~275 GB/s (NVLink 3.0, measured on pphelan-doca-test Mar 2026)
-            #   H100 SXM: ~395 GB/s (NVLink 4.0, measured on autocluster-active-testing Mar 2026)
-            #   H200 SXM: ~395 GB/s (same NVLink 4.0 as H100)
+            # Configured via values.yaml nvlinkThresholds list.
             case "$SKU" in
-              *a100*sxm*) THRESHOLD=220 ;;
-              *h100*sxm*) THRESHOLD=316 ;;
-              *h200*sxm*) THRESHOLD=316 ;;
-              *) echo "WARNING: Unknown SKU '$SKU', using conservative threshold"; THRESHOLD=50 ;;
+            {{- range .Values.nvlinkThresholds }}
+              {{ .pattern }}) THRESHOLD={{ .threshold }} ;;
+            {{- end }}
+              *) echo "WARNING: Unknown SKU '$SKU', using conservative threshold"; THRESHOLD={{ .Values.defaultNvlinkThreshold }} ;;
             esac
 
             echo "SKU: $SKU | Per-pair threshold: ${THRESHOLD} GB/s"

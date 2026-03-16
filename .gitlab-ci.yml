@@ -5,6 +5,8 @@ stages:
 variables:
   GHCR_REGISTRY: ghcr.io/crusoe-cloud
   OCI_REPO: oci://${GHCR_REGISTRY}/autoclusters-controller-helm-charts
+  # Set to "true" in CI/CD settings to enforce version bump checks on MRs
+  VERSION_CHECK_ENABLED: "false"
 
 helm-lint:
   stage: lint
@@ -17,6 +19,33 @@ helm-lint:
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+version-check:
+  stage: lint
+  image: alpine:3.20
+  script:
+    - apk add --no-cache git
+    - |
+      if [ "$VERSION_CHECK_ENABLED" != "true" ]; then
+        echo "Version check disabled (VERSION_CHECK_ENABLED=$VERSION_CHECK_ENABLED). Skipping."
+        exit 0
+      fi
+      FAILED=0
+      for chart in charts/*/; do
+        chart_name=$(basename "$chart")
+        # Check if any chart file changed (excluding Chart.yaml itself)
+        if git diff origin/$CI_DEFAULT_BRANCH --name-only -- "$chart" | grep -v Chart.yaml | grep -q .; then
+          # Check if Chart.yaml version was bumped
+          if ! git diff origin/$CI_DEFAULT_BRANCH -- "$chart/Chart.yaml" | grep -q '+version:'; then
+            echo "ERROR: $chart_name has changes but Chart.yaml version was not bumped"
+            FAILED=1
+          fi
+        fi
+      done
+      if [ "$FAILED" -eq 1 ]; then exit 1; fi
+      echo "All changed charts have version bumps."
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
 
 publish-charts:
   stage: publish

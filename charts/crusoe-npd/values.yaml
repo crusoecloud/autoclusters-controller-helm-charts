@@ -28,8 +28,23 @@ resources:
     cpu: 100m
     memory: 128Mi
 
-# Plugin configuration
-plugin:
+# Monitor definitions — each entry generates a ConfigMap key, volume mount,
+# and --config.custom-plugin-monitor arg. Adding a new test = add an entry here.
+# The check_gpu_health.sh script is generic (takes test-name + condition-type as args).
+monitors:
+  - name: gpu-dcgm-diag
+    conditionType: GPUDCGMUnhealthy
+    conditionReason: GPUDCGMTestPassed
+    conditionMessage: "GPU DCGM Level 2 diagnostics passed"
+    failedReason: GPUDCGMTestFailed
+  - name: nvbandwidth
+    conditionType: GPUNVBandwidthUnhealthy
+    conditionReason: NVBandwidthTestPassed
+    conditionMessage: "NVBandwidth test passed"
+    failedReason: NVBandwidthTestFailed
+
+# Plugin defaults applied to all monitors (can be overridden per-monitor)
+pluginDefaults:
   invokeInterval: "60s"
   # Timeout for the shell script invocation (kubectl get workflow), not for the actual GPU test duration.
   timeout: "10s"
