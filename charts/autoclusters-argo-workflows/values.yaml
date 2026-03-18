@@ -55,12 +55,12 @@ deadlines:
 # Container images for GPU test templates
 images:
   dcgm:
-    repository: ghcr.io/crusoe-cloud/crusoe-dcgm
+    repository: ghcr.io/crusoecloud/crusoe-dcgm
     tag: "1.0.0"
     # Optional: pin to a specific image digest (overrides tag when set)
     digest: ""
   nvbandwidth:
-    repository: ghcr.io/crusoe-cloud/nvbandwidth
+    repository: ghcr.io/crusoecloud/nvbandwidth
     tag: "1.0.0"
     # Optional: pin to a specific image digest (overrides tag when set)
     digest: ""

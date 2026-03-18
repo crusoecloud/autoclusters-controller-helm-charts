@@ -3,7 +3,7 @@ stages:
   - publish
 
 variables:
-  GHCR_REGISTRY: ghcr.io/crusoe-cloud
+  GHCR_REGISTRY: ghcr.io/crusoecloud
   OCI_REPO: oci://${GHCR_REGISTRY}/autoclusters-controller-helm-charts
   # Set to "true" in CI/CD settings to enforce version bump checks on MRs
   VERSION_CHECK_ENABLED: "false"
