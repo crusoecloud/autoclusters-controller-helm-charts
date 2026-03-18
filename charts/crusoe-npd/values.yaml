@@ -6,7 +6,7 @@
 
 image:
   repository: ghcr.io/crusoe-cloud/crusoe-npd
-  tag: "v0.8.19-crusoe"
+  tag: "1.0.0"
   pullPolicy: Always
   # Optional: pin to a specific image digest (overrides tag when set)
   digest: ""

@@ -3,7 +3,7 @@ name: crusoe-npd
 description: A Helm chart for Node Problem Detector with custom GPU health monitoring plugins
 type: application
 version: 1.0.0
-appVersion: "v0.8.19-crusoe"
+appVersion: "1.0.0"
 keywords:
   - kubernetes
   - node-problem-detector
