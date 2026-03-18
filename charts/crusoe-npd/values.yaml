@@ -5,7 +5,7 @@
 # via ConfigMap. Only the JSON monitor configs are templated here.
 
 image:
-  repository: ghcr.io/crusoe-cloud/crusoe-npd
+  repository: ghcr.io/crusoecloud/crusoe-npd
   tag: "1.0.0"
   pullPolicy: Always
   # Optional: pin to a specific image digest (overrides tag when set)
