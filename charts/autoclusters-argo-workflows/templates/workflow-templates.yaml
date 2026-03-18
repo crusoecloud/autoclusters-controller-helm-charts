@@ -20,6 +20,10 @@ spec:
     priorityClassName: {{ .Values.priorityClass.name }}
   templates:
     - name: run-test
+      inputs:
+        parameters:
+          - name: nodeName
+          - name: sku
       outputs:
         parameters:
           - name: test-results
@@ -42,6 +46,18 @@ spec:
         args:
           - |
             set -e
+
+            SKU="{{`{{inputs.parameters.sku}}`}}"
+            SKU_LOWER=$(echo "$SKU" | tr '[:upper:]' '[:lower:]')
+
+            {{- if .Values.skippedSKUPatterns }}
+            # Check if this SKU should be skipped
+            {{- range .Values.skippedSKUPatterns }}
+            case "$SKU_LOWER" in
+              {{ . }}) echo "SKIPPED: SKU '$SKU' matches skip pattern '{{ . }}'"; cat > /tmp/test-results.json <<< '{"status":"skipped","sku":"'"$SKU"'"}'; exit 0 ;;
+            esac
+            {{- end }}
+            {{- end }}
 
             echo "=== DCGM Level 2 Diagnostics ==="
 
@@ -248,10 +264,20 @@ spec:
 
             echo "=== NVBandwidth Test ==="
             SKU="{{`{{inputs.parameters.sku}}`}}"
+            SKU_LOWER=$(echo "$SKU" | tr '[:upper:]' '[:lower:]')
+
+            {{- if .Values.skippedSKUPatterns }}
+            # Check if this SKU should be skipped
+            {{- range .Values.skippedSKUPatterns }}
+            case "$SKU_LOWER" in
+              {{ . }}) echo "SKIPPED: SKU '$SKU' matches skip pattern '{{ . }}'"; cat > /tmp/test-results.json <<< '{"status":"skipped","sku":"'"$SKU"'"}'; exit 0 ;;
+            esac
+            {{- end }}
+            {{- end }}
 
             # Per-SKU NVLink bandwidth thresholds (GB/s per GPU pair).
             # Configured via values.yaml nvlinkThresholds list.
-            case "$SKU" in
+            case "$SKU_LOWER" in
             {{- range .Values.nvlinkThresholds }}
               {{ .pattern }}) THRESHOLD={{ .threshold }} ;;
             {{- end }}

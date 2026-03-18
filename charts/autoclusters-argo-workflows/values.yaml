@@ -77,6 +77,11 @@ nvlinkThresholds:
     threshold: 316
 defaultNvlinkThreshold: 50
 
+# SKU patterns to skip tests for (glob syntax, matched case-insensitively).
+# Nodes matching any pattern exit immediately with a "skipped" result.
+skippedSKUPatterns:
+  - "b200*"
+
 # PriorityClass for GPU test workflows
 priorityClass:
   create: true
