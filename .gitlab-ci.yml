@@ -1,10 +1,7 @@
 stages:
   - lint
-  - publish
 
 variables:
-  GHCR_REGISTRY: ghcr.io/crusoecloud
-  OCI_REPO: oci://${GHCR_REGISTRY}/autoclusters-controller-helm-charts
   # Set to "true" in CI/CD settings to enforce version bump checks on MRs
   VERSION_CHECK_ENABLED: "false"
 
@@ -46,20 +43,3 @@ version-check:
       echo "All changed charts have version bumps."
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
-
-publish-charts:
-  stage: publish
-  image: alpine/helm:3.16
-  script:
-    - echo "${GHCR_TOKEN}" | helm registry login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
-    - mkdir -p /tmp/packages
-    - helm package charts/autoclusters-controller -d /tmp/packages/
-    - helm package charts/crusoe-npd -d /tmp/packages/
-    - helm dependency update charts/autoclusters-argo-workflows
-    - helm package charts/autoclusters-argo-workflows -d /tmp/packages/
-    - |
-      for pkg in /tmp/packages/*.tgz; do
-        helm push "$pkg" "${OCI_REPO}"
-      done
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
