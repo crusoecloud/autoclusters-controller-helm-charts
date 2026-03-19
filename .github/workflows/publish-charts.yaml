@@ -26,14 +26,8 @@ jobs:
         with:
           version: v3.11.2
 
-      - name: Build chart dependencies
-        run: |
-          for chart in charts/*/; do
-            if [ -f "$chart/Chart.lock" ] || grep -q 'dependencies:' "$chart/Chart.yaml" 2>/dev/null; then
-              echo "Building dependencies for $(basename $chart)"
-              helm dependency build "$chart"
-            fi
-          done
+      - name: Add dependency repos
+        run: helm repo add argo https://argoproj.github.io/argo-helm
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
