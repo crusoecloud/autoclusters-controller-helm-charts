@@ -52,7 +52,8 @@ gpuResources:
 deadlines:
   templateDeadlineSeconds: 5400
 
-# Container images for GPU test templates
+# Container images for GPU test templates.
+# Tags must be set explicitly — Chart appVersion tracks upstream Argo (3.7.9), not test images.
 images:
   dcgm:
     repository: ghcr.io/crusoecloud/crusoe-dcgm

@@ -19,7 +19,7 @@ Charts are published as OCI artifacts to `ghcr.io/crusoecloud/autoclusters-contr
 ```bash
 helm install autoclusters-argo-workflows \
   oci://ghcr.io/crusoecloud/autoclusters-controller-helm-charts/autoclusters-argo-workflows \
-  --version 0.1.0 \
+  --version 1.0.0 \
   -n crusoe-system --create-namespace
 ```
 
@@ -28,7 +28,7 @@ helm install autoclusters-argo-workflows \
 ```bash
 helm install autoclusters-controller \
   oci://ghcr.io/crusoecloud/autoclusters-controller-helm-charts/autoclusters-controller \
-  --version 0.1.0 \
+  --version 1.0.0 \
   -n crusoe-system
 ```
 
@@ -37,7 +37,7 @@ helm install autoclusters-controller \
 ```bash
 helm install crusoe-npd \
   oci://ghcr.io/crusoecloud/autoclusters-controller-helm-charts/crusoe-npd \
-  --version 0.1.0 \
+  --version 1.0.0 \
   -n crusoe-system
 ```
 
