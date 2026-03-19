@@ -6,7 +6,8 @@
 
 image:
   repository: ghcr.io/crusoecloud/crusoe-npd
-  tag: "1.0.0"
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
   pullPolicy: Always
   # Optional: pin to a specific image digest (overrides tag when set)
   digest: ""
