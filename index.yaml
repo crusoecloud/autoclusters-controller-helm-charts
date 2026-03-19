@@ -1,0 +1,74 @@
+apiVersion: v1
+entries:
+  autoclusters-argo-workflows:
+  - apiVersion: v2
+    appVersion: 3.7.9
+    created: "2026-03-19T22:16:06.027574014Z"
+    dependencies:
+    - name: argo-workflows
+      repository: https://argoproj.github.io/argo-helm
+      version: 0.47.2
+    description: Argo Workflows for autoclusters GPU testing - wraps upstream argo-workflows
+      with custom RBAC, WorkflowTemplates, and PriorityClass
+    digest: bc4a87a3d3564c3a51c59c12a45da7307e3e19dc6a9b2f3f1a883144d409e847
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - argo-workflows
+    - gpu-testing
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: autoclusters-argo-workflows
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/autoclusters-argo-workflows-1.0.0/autoclusters-argo-workflows-1.0.0.tgz
+    version: 1.0.0
+  autoclusters-controller:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-03-19T22:16:06.176782831Z"
+    description: A Helm chart for the AutoClusters Controller
+    digest: 59e1cd70fb5d39828807b660f5ea24738d8cedf569f3ac673c43de740cba51f7
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - controller
+    - operator
+    - node-testing
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: autoclusters-controller
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/autoclusters-controller-1.0.0/autoclusters-controller-1.0.0.tgz
+    version: 1.0.0
+  crusoe-npd:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-03-19T22:16:06.313967775Z"
+    description: A Helm chart for Node Problem Detector with custom GPU health monitoring
+      plugins
+    digest: a3b83367d047ba46c771a12668b0870844d81cb3bc79ad5c89b010216b5367ef
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - node-problem-detector
+    - gpu
+    - health-monitoring
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: crusoe-npd
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/crusoe-npd-1.0.0/crusoe-npd-1.0.0.tgz
+    version: 1.0.0
+generated: "2026-03-19T22:16:06.313972018Z"
