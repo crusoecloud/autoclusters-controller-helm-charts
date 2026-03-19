@@ -12,6 +12,6 @@ keywords:
 maintainers:
   - name: Crusoe Energy
     url: https://crusoeenergy.com
-home: https://github.com/crusoe-cloud/autoclusters-controller-helm-charts
+home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
 sources:
-  - https://github.com/crusoe-cloud/autoclusters-controller-helm-charts
+  - https://github.com/crusoecloud/autoclusters-controller-helm-charts
