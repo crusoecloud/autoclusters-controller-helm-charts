@@ -3,6 +3,31 @@ entries:
   autoclusters-argo-workflows:
   - apiVersion: v2
     appVersion: 3.7.9
+    created: "2026-03-24T16:07:00.263892969Z"
+    dependencies:
+    - name: argo-workflows
+      repository: https://argoproj.github.io/argo-helm
+      version: 0.47.2
+    description: Argo Workflows for autoclusters GPU testing - wraps upstream argo-workflows
+      with custom RBAC, WorkflowTemplates, and PriorityClass
+    digest: cda30ba0bda20f527256496d3baa88a642d8d97b4382771e99ba4a85508045fb
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - argo-workflows
+    - gpu-testing
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: autoclusters-argo-workflows
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/autoclusters-argo-workflows-1.1.0/autoclusters-argo-workflows-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 3.7.9
     created: "2026-03-19T22:16:06.027574014Z"
     dependencies:
     - name: argo-workflows
@@ -71,4 +96,4 @@ entries:
     urls:
     - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/crusoe-npd-1.0.0/crusoe-npd-1.0.0.tgz
     version: 1.0.0
-generated: "2026-03-19T22:16:06.313972018Z"
+generated: "2026-03-24T16:07:00.26390959Z"
