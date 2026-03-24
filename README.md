@@ -64,19 +64,18 @@ helm repo update
 Argo Workflows CRDs must be installed before the chart because Helm validates WorkflowTemplate resources during install. The CRDs are too large for client-side apply (262KB annotation limit), so server-side apply is required.
 
 ```bash
-helm pull autoclusters/autoclusters-argo-workflows --version 1.0.0 --destination /tmp/
-tar xzf /tmp/autoclusters-argo-workflows-1.0.0.tgz -C /tmp/ \
+helm pull autoclusters/autoclusters-argo-workflows --destination /tmp/
+tar xzf /tmp/autoclusters-argo-workflows-*.tgz -C /tmp/ \
   autoclusters-argo-workflows/charts/argo-workflows/files/crds/minimal/
 kubectl apply --server-side \
   -f /tmp/autoclusters-argo-workflows/charts/argo-workflows/files/crds/minimal/
-rm -rf /tmp/autoclusters-argo-workflows /tmp/autoclusters-argo-workflows-1.0.0.tgz
+rm -rf /tmp/autoclusters-argo-workflows /tmp/autoclusters-argo-workflows-*.tgz
 ```
 
 ### Step 3: Install Argo Workflows
 
 ```bash
 helm install autoclusters-argo-workflows autoclusters/autoclusters-argo-workflows \
-  --version 1.0.0 \
   -n crusoe-system --create-namespace \
   --set argo-workflows.crds.install=false
 ```
