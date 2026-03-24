@@ -267,10 +267,19 @@ spec:
             SKU_LOWER=$(echo "$SKU" | tr '[:upper:]' '[:lower:]')
 
             {{- if .Values.skippedSKUPatterns }}
-            # Check if this SKU should be skipped
+            # Check if this SKU should be skipped (global)
             {{- range .Values.skippedSKUPatterns }}
             case "$SKU_LOWER" in
               {{ . }}) echo "SKIPPED: SKU '$SKU' matches skip pattern '{{ . }}'"; cat > /tmp/test-results.json <<< '{"status":"skipped","sku":"'"$SKU"'"}'; exit 0 ;;
+            esac
+            {{- end }}
+            {{- end }}
+
+            {{- if .Values.nvbandwidthSkippedSKUPatterns }}
+            # Check if this SKU should skip nvbandwidth (PCIe-only GPUs)
+            {{- range .Values.nvbandwidthSkippedSKUPatterns }}
+            case "$SKU_LOWER" in
+              {{ . }}) echo "SKIPPED: SKU '$SKU' is PCIe-only, nvbandwidth not applicable"; cat > /tmp/test-results.json <<< '{"status":"skipped","sku":"'"$SKU"'","reason":"pcie_only"}'; exit 0 ;;
             esac
             {{- end }}
             {{- end }}

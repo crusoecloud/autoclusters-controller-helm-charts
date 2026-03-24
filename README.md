@@ -8,7 +8,7 @@ Tests only run on GPU nodes with no active customer workloads. Test pods use the
 
 | Chart | Description | Version |
 |-------|-------------|---------|
-| `autoclusters-argo-workflows` | Argo Workflows controller + GPU test WorkflowTemplates + scavenger PriorityClass | 1.0.0 |
+| `autoclusters-argo-workflows` | Argo Workflows controller + GPU test WorkflowTemplates + scavenger PriorityClass | 1.1.0 |
 | `autoclusters-controller` | Controller that schedules and submits GPU health test workflows on idle nodes | 1.0.0 |
 | `crusoe-npd` | Node Problem Detector DaemonSet with GPU health monitoring plugins | 1.0.0 |
 
@@ -36,7 +36,9 @@ Runs `nvbandwidth -t device_to_device_memcpy_read_ce` to measure NVLink bandwidt
 | `*h200*sxm*` | 316 |
 | Default (unknown SKU) | 50 |
 
-> **Warning:** B200 SKUs (`b200*`) are currently skipped — NVBandwidth tests will not run on these nodes.
+> **Warning:** B200 SKUs (`b200*`) are currently skipped — neither DCGM nor NVBandwidth tests will run on these nodes.
+
+> **Note:** PCIe-only GPUs (e.g., L40S) automatically skip the NVBandwidth test. These SKUs have no NVLink interconnect, so device-to-device bandwidth testing is not applicable — DCGM Level 2 already validates PCIe bandwidth. The `GPUNVBandwidthUnhealthy` node condition will still be present on these nodes with status `False` (healthy), but it reflects a skipped test rather than an actual NVBandwidth measurement.
 
 Thresholds are configurable via the `nvlinkThresholds` Helm value.
 
@@ -130,7 +132,8 @@ helm install autoclusters-controller autoclusters/autoclusters-controller \
 | `images.nvbandwidth.tag` | `"1.0.0"` | NVBandwidth image tag (statically set, not derived from chart appVersion) |
 | `nvlinkThresholds` | *(see below)* | Per-SKU NVLink bandwidth thresholds (GB/s) |
 | `defaultNvlinkThreshold` | `50` | Fallback threshold for unrecognized SKUs (GB/s) |
-| `skippedSKUPatterns` | `["b200*"]` | SKU glob patterns to skip testing |
+| `skippedSKUPatterns` | `["b200*"]` | SKU glob patterns to skip all tests |
+| `nvbandwidthSkippedSKUPatterns` | `["*l40s*"]` | SKU glob patterns to skip only the NVBandwidth test (PCIe-only GPUs) |
 | `priorityClass.value` | `-1000` | Priority value for test pods (lower = more preemptible) |
 
 **NVLink thresholds** default configuration:
@@ -219,7 +222,7 @@ NPD translates test results into Kubernetes node conditions:
 | Condition | Status: True | Status: False |
 |-----------|-------------|---------------|
 | `GPUDCGMUnhealthy` | DCGM diagnostics failed | DCGM diagnostics passed |
-| `GPUNVBandwidthUnhealthy` | NVBandwidth test failed | NVBandwidth test passed |
+| `GPUNVBandwidthUnhealthy` | NVBandwidth test failed | NVBandwidth test passed (or skipped on PCIe-only SKUs) |
 
 Check node conditions:
 

@@ -78,10 +78,16 @@ nvlinkThresholds:
     threshold: 316
 defaultNvlinkThreshold: 50
 
-# SKU patterns to skip tests for (glob syntax, matched case-insensitively).
+# SKU patterns to skip ALL tests for (glob syntax, matched case-insensitively).
 # Nodes matching any pattern exit immediately with a "skipped" result.
 skippedSKUPatterns:
   - "b200*"
+
+# SKU patterns to skip only nvbandwidth for (glob syntax, case-insensitive).
+# PCIe-only GPUs (no NVLink) get no value from device-to-device bandwidth tests
+# since DCGM Level 2 already validates PCIe integration.
+nvbandwidthSkippedSKUPatterns:
+  - "*l40s*"
 
 # PriorityClass for GPU test workflows
 priorityClass:
