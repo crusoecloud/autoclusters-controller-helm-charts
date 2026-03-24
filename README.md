@@ -36,7 +36,7 @@ Runs `nvbandwidth -t device_to_device_memcpy_read_ce` to measure NVLink bandwidt
 | `*h200*sxm*` | 316 |
 | Default (unknown SKU) | 50 |
 
-SKUs matching `b200*` are currently skipped.
+> **Warning:** B200 SKUs (`b200*`) are currently skipped — NVBandwidth tests will not run on these nodes.
 
 Thresholds are configurable via the `nvlinkThresholds` Helm value.
 
