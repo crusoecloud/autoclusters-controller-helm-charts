@@ -1,9 +1,12 @@
 stages:
   - lint
+  - integration-test
 
 variables:
   # Set to "true" in CI/CD settings to enforce version bump checks on MRs
   VERSION_CHECK_ENABLED: "false"
+  # Controller image for integration tests (override in CI/CD settings or MR variables)
+  CONTROLLER_IMAGE: "ghcr.io/crusoecloud/autoclusters-controller:latest"
 
 helm-lint:
   stage: lint
@@ -43,3 +46,42 @@ version-check:
       echo "All changed charts have version bumps."
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
+
+integration-test:
+  stage: integration-test
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    KIND_CLUSTER_NAME: autoclusters-inttest
+  before_script:
+    - apk add --no-cache bash curl git go helm kubectl make
+    - |
+      # Install Kind
+      curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+      chmod +x /usr/local/bin/kind
+  script:
+    - |
+      echo "=============================================="
+      echo "Integration Test Configuration"
+      echo "=============================================="
+      echo "Helm chart path: $CI_PROJECT_DIR"
+      echo "Controller image: $CONTROLLER_IMAGE"
+      echo "=============================================="
+    - git clone https://github.com/crusoecloud/autoclusters-integration-test-harness.git /tmp/test-harness
+    - cd /tmp/test-harness
+    - make ci-test-helm HELM_CHART_PATH=$CI_PROJECT_DIR CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+  after_script:
+    - cd /tmp/test-harness && make test-contract-teardown || true
+  artifacts:
+    when: always
+    paths:
+      - /tmp/contract-test-results/
+    expire_in: 7 days
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
