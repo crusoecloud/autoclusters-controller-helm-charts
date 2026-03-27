@@ -72,7 +72,14 @@ integration-test:
       echo "Helm chart path: $CI_PROJECT_DIR"
       echo "Controller image: $CONTROLLER_IMAGE"
       echo "=============================================="
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
+    - |
+      # Clone integration test harness
+      # Uses TEST_HARNESS_TOKEN (project/group access token) if set,
+      # falls back to CI_JOB_TOKEN (requires allowlist on target project).
+      # To configure: add a GitLab access token with read_repository scope
+      # as a CI/CD variable named TEST_HARNESS_TOKEN.
+      CLONE_TOKEN="${TEST_HARNESS_TOKEN:-$CI_JOB_TOKEN}"
+      git clone https://gitlab-ci-token:${CLONE_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
     - cd /tmp/test-harness
     - make ci-test-helm HELM_CHART_PATH=$CI_PROJECT_DIR CONTROLLER_IMAGE=$CONTROLLER_IMAGE
   after_script:
