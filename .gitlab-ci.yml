@@ -72,7 +72,7 @@ integration-test:
       echo "Helm chart path: $CI_PROJECT_DIR"
       echo "Controller image: $CONTROLLER_IMAGE"
       echo "=============================================="
-    - git clone https://github.com/crusoecloud/autoclusters-integration-test-harness.git /tmp/test-harness
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
     - cd /tmp/test-harness
     - make ci-test-helm HELM_CHART_PATH=$CI_PROJECT_DIR CONTROLLER_IMAGE=$CONTROLLER_IMAGE
   after_script:
