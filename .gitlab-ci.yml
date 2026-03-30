@@ -7,6 +7,7 @@ variables:
   VERSION_CHECK_ENABLED: "false"
   # Controller image for integration tests (override in CI/CD settings or MR variables)
   CONTROLLER_IMAGE: "ghcr.io/crusoecloud/autoclusters-controller:latest"
+  TEST_HARNESS_BRANCH: "foundational-mr"
 
 helm-lint:
   stage: lint
@@ -79,7 +80,7 @@ integration-test:
       # To configure: add a GitLab access token with read_repository scope
       # as a CI/CD variable named TEST_HARNESS_TOKEN.
       CLONE_TOKEN="${TEST_HARNESS_TOKEN:-$CI_JOB_TOKEN}"
-      git clone https://gitlab-ci-token:${CLONE_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
+      git clone --branch "$TEST_HARNESS_BRANCH" https://gitlab-ci-token:${CLONE_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
     - cd /tmp/test-harness
     - make ci-test-helm HELM_CHART_PATH=$CI_PROJECT_DIR CONTROLLER_IMAGE=$CONTROLLER_IMAGE
   after_script:
