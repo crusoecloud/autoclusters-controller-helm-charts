@@ -57,8 +57,15 @@ integration-test:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     KIND_CLUSTER_NAME: autoclusters-inttest
+    PATH: "/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   before_script:
-    - apk add --no-cache bash curl git go helm kubectl make
+    - apk add --no-cache bash curl git helm kubectl make
+    - |
+      # Install Go 1.24 (Alpine repos only have 1.22)
+      curl -Lo /tmp/go.tar.gz https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
+      rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz
+      rm /tmp/go.tar.gz
+      go version
     - |
       # Wait for Docker daemon to be ready
       echo "Waiting for Docker daemon..."
