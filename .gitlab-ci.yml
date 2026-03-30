@@ -50,17 +50,29 @@ version-check:
 
 integration-test:
   stage: integration-test
-  image: docker:24-dind
+  image: docker:24-cli
   services:
     - docker:24-dind
   variables:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_CERTDIR: "/certs"
-    DOCKER_TLS_VERIFY: 1
+    DOCKER_TLS_VERIFY: "1"
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
     KIND_CLUSTER_NAME: autoclusters-inttest
   before_script:
     - apk add --no-cache bash curl git go helm kubectl make
+    - |
+      # Wait for Docker daemon to be ready
+      echo "Waiting for Docker daemon..."
+      for i in $(seq 1 30); do
+        if docker info >/dev/null 2>&1; then
+          echo "Docker is ready"
+          break
+        fi
+        echo "Waiting... ($i/30)"
+        sleep 1
+      done
+      docker info >/dev/null 2>&1 || { echo "ERROR: Docker daemon not available"; exit 1; }
     - |
       # Install Kind
       curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
