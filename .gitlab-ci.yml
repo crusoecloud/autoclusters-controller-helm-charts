@@ -6,7 +6,7 @@ variables:
   # Set to "true" in CI/CD settings to enforce version bump checks on MRs
   VERSION_CHECK_ENABLED: "false"
   # Controller image for integration tests (override in CI/CD settings or MR variables)
-  CONTROLLER_IMAGE: "ghcr.io/crusoecloud/autoclusters-controller:latest"
+  CONTROLLER_IMAGE: "ghcr.io/crusoecloud/autoclusters-controller:1.0.0"
   TEST_HARNESS_BRANCH: "foundational-mr"
 
 helm-lint:
