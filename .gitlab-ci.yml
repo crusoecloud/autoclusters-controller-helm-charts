@@ -9,7 +9,6 @@ variables:
   CONTROLLER_IMAGE_REPO: "ghcr.io/crusoecloud/autoclusters-controller"
   CONTROLLER_IMAGE_TAG: "1.0.0"
   CONTROLLER_IMAGE: "${CONTROLLER_IMAGE_REPO}:${CONTROLLER_IMAGE_TAG}"
-  TEST_HARNESS_BRANCH: "foundational-mr"
 
 helm-lint:
   stage: lint
@@ -52,69 +51,14 @@ version-check:
 
 integration-test:
   stage: integration-test
-  image: docker:24-cli
-  services:
-    - docker:24-dind
+  trigger:
+    project: crusoeenergy/island/managed/autoclusters-integration-test-harness
+    branch: main
+    strategy: depend
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    KIND_CLUSTER_NAME: autoclusters-inttest
-    PATH: "/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-  before_script:
-    - apk add --no-cache bash curl git helm kubectl make
-    - |
-      # Install Go 1.24 (Alpine repos only have 1.22)
-      curl -Lo /tmp/go.tar.gz https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
-      rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz
-      rm /tmp/go.tar.gz
-      go version
-    - |
-      # Wait for Docker daemon to be ready
-      echo "Waiting for Docker daemon..."
-      for i in $(seq 1 30); do
-        if docker info >/dev/null 2>&1; then
-          echo "Docker is ready"
-          break
-        fi
-        echo "Waiting... ($i/30)"
-        sleep 1
-      done
-      docker info >/dev/null 2>&1 || { echo "ERROR: Docker daemon not available"; exit 1; }
-    - |
-      # Install Kind
-      curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
-      chmod +x /usr/local/bin/kind
-  script:
-    - |
-      echo "=============================================="
-      echo "Integration Test Configuration"
-      echo "=============================================="
-      echo "Helm chart path: $CI_PROJECT_DIR"
-      echo "Controller image: $CONTROLLER_IMAGE"
-      echo "=============================================="
-    - |
-      # Clone integration test harness
-      # Uses TEST_HARNESS_TOKEN (project/group access token) if set,
-      # falls back to CI_JOB_TOKEN (requires allowlist on target project).
-      # To configure: add a GitLab access token with read_repository scope
-      # as a CI/CD variable named TEST_HARNESS_TOKEN.
-      CLONE_TOKEN="${TEST_HARNESS_TOKEN:-$CI_JOB_TOKEN}"
-      git clone --branch "$TEST_HARNESS_BRANCH" https://gitlab-ci-token:${CLONE_TOKEN}@gitlab.com/crusoeenergy/island/managed/autoclusters-integration-test-harness.git /tmp/test-harness
-    - |
-      # Pre-pull controller image so Kind can load it
-      if [ -n "$CONTROLLER_IMAGE" ]; then
-        echo "Pulling controller image: $CONTROLLER_IMAGE"
-        docker pull "$CONTROLLER_IMAGE"
-      fi
-    - cd /tmp/test-harness
-    - make ci-test-helm HELM_CHART_PATH=$CI_PROJECT_DIR CONTROLLER_IMAGE=$CONTROLLER_IMAGE
-  after_script:
-    - cd /tmp/test-harness && make test-contract-teardown || true
-  artifacts:
-    when: always
-    paths:
-      - /tmp/contract-test-results/
-    expire_in: 7 days
+    CONTROLLER_IMAGE: "${CONTROLLER_IMAGE}"
+    HELM_CHART_REPO: "https://gitlab.com/crusoeenergy/infrastructure/sre/helm_charts/autoclusters-controller-helm-charts"
+    HELM_CHART_REF: "${CI_COMMIT_SHA}"
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
