@@ -57,7 +57,7 @@ integration-test:
     strategy: depend
   variables:
     CONTROLLER_IMAGE: "${CONTROLLER_IMAGE}"
-    HELM_CHART_REPO: "https://gitlab.com/crusoeenergy/infrastructure/sre/helm_charts/autoclusters-controller-helm-charts"
+    HELM_CHART_REPO: "https://gitlab.com/crusoeenergy/island/external/autoclusters-controller-helm-charts"
     HELM_CHART_REF: "${CI_COMMIT_SHA}"
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
