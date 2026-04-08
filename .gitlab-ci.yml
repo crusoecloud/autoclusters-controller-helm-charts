@@ -53,7 +53,7 @@ integration-test:
   stage: integration-test
   trigger:
     project: crusoeenergy/island/managed/autoclusters-integration-test-harness
-    branch: main
+    branch: foundational-mr  # TODO: change to main after harness MR is merged
     strategy: depend
   variables:
     CONTROLLER_IMAGE: "${CONTROLLER_IMAGE}"
