@@ -59,9 +59,9 @@ spec:
             {{- end }}
             {{- end }}
 
-            echo "=== DCGM Level 2 Diagnostics ==="
+            echo "=== DCGM Level 3 Diagnostics ==="
 
-            echo "Running GPU deployment checks (memory, PCIe/NVLink integration)..."
+            echo "Running comprehensive GPU stress tests (memory patterns, compute stress, PCIe/NVLink)..."
 
             # Detect GPU count for -i flag (cloud VMs don't expose NvSwitch
             # devices, so we must target GPUs explicitly to avoid DCGM hanging
@@ -70,12 +70,14 @@ spec:
             GPU_IDS=$(seq -s, 0 $((GPU_COUNT - 1)))
             echo "Detected $GPU_COUNT GPUs, testing gpu:$GPU_IDS"
 
-            # Run Level 2 DCGMI diagnostics — deployment checks:
-            # memory bandwidth, PCIe/NVLink integration, ECC checks
+            # Run Level 3 DCGMI diagnostics — comprehensive stress tests:
+            # software deployment, memory patterns, compute stress (GpuBurn),
+            # PCIe/NVLink integration, memory bandwidth, targeted stress, targeted power.
+            # Level 3 is a superset of Level 2, catching subtle hardware degradation.
             # -i gpu:N targets only GPUs, skipping NvSwitch entity checks
             # tee streams output in real-time while capturing for pass/fail check
             DCGM_EXIT=0
-            OUTPUT=$(dcgmi diag -r 2 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || DCGM_EXIT=$?
+            OUTPUT=$(dcgmi diag -r 3 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || DCGM_EXIT=$?
 
             # dcgmi exit codes (from source):
             #   0 (DCGM_ST_OK)              = all tests passed
@@ -88,7 +90,9 @@ spec:
 
             # Parse DCGM table output for structured results.
             # dcgmi diag result strings (from source): "Pass", "Fail", "Warn", "Skip", "Not Run"
-            # Output sections: Deployment (software), Hardware (memory), Integration (pcie)
+            # L3 test names (left column): software, memory, diagnostic, nvbandwidth, pcie,
+            #   memory_bandwidth, targeted_stress, targeted_power
+            # We track the current test by matching "| <test_name> " lines.
             CURRENT_SUBTEST=""
             OVERALL_FAIL=0
             FAILED_GPU_COUNT=0
@@ -106,13 +110,10 @@ spec:
             done
 
             while IFS= read -r line; do
-              # Track current section by header lines
-              if echo "$line" | grep -q "Deployment"; then
-                CURRENT_SUBTEST="software"
-              elif echo "$line" | grep -q "Hardware"; then
-                CURRENT_SUBTEST="memory"
-              elif echo "$line" | grep -q "Integration"; then
-                CURRENT_SUBTEST="pcie"
+              # Match test name lines: "| software ", "| memory ", "| diagnostic ", etc.
+              TEST_NAME=$(echo "$line" | grep -oP '^\|\s+\K(software|memory|diagnostic|nvbandwidth|pcie|memory_bandwidth|targeted_stress|targeted_power)(?=\s+\|)' || true)
+              if [ -n "$TEST_NAME" ]; then
+                CURRENT_SUBTEST="$TEST_NAME"
               fi
 
               # Extract per-GPU status: "GPU0: Pass" or "GPU1: Fail"
@@ -145,28 +146,35 @@ spec:
               fi
             done <<< "$OUTPUT"
 
+            # L3 subtests to track
+            ALL_SUBTESTS="software memory diagnostic pcie memory_bandwidth targeted_stress targeted_power"
+
             # Build JSON output
             GPUS_JSON=""
             FAILED_TESTS_SET=""
             for i in $(seq 0 $((GPU_COUNT - 1))); do
               [ -n "$GPUS_JSON" ] && GPUS_JSON="${GPUS_JSON},"
-              SW_STATUS="${GPU_SUBTESTS[${i}:software]:-pass}"
-              MEM_STATUS="${GPU_SUBTESTS[${i}:memory]:-pass}"
-              PCIE_STATUS="${GPU_SUBTESTS[${i}:pcie]:-pass}"
               G2H="${GPU_PCIE_G2H[$i]:-0}"
               H2G="${GPU_PCIE_H2G[$i]:-0}"
               BIDIR="${GPU_PCIE_BIDIR[$i]:-0}"
 
+              # Build per-GPU tests JSON
+              TESTS_JSON=""
+              for st in $ALL_SUBTESTS; do
+                [ -n "$TESTS_JSON" ] && TESTS_JSON="${TESTS_JSON},"
+                ST_STATUS="${GPU_SUBTESTS[${i}:${st}]:-pass}"
+                TESTS_JSON="${TESTS_JSON}\"${st}\":\"${ST_STATUS}\""
+              done
+
               if [ "${GPU_STATUS[$i]}" = "fail" ]; then
                 FAILED_GPU_COUNT=$((FAILED_GPU_COUNT + 1))
                 OVERALL_FAIL=1
-                # Track which subtests failed
-                [ "$SW_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} software"
-                [ "$MEM_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} memory"
-                [ "$PCIE_STATUS" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} pcie"
+                for st in $ALL_SUBTESTS; do
+                  [ "${GPU_SUBTESTS[${i}:${st}]}" = "fail" ] && FAILED_TESTS_SET="${FAILED_TESTS_SET} ${st}"
+                done
               fi
 
-              GPUS_JSON="${GPUS_JSON}{\"gpu_id\":${i},\"status\":\"${GPU_STATUS[$i]}\",\"tests\":{\"software\":\"${SW_STATUS}\",\"memory\":\"${MEM_STATUS}\",\"pcie\":\"${PCIE_STATUS}\"},\"pcie_gpu_to_host_gbps\":${G2H},\"pcie_host_to_gpu_gbps\":${H2G},\"pcie_bidirectional_gbps\":${BIDIR}}"
+              GPUS_JSON="${GPUS_JSON}{\"gpu_id\":${i},\"status\":\"${GPU_STATUS[$i]}\",\"tests\":{${TESTS_JSON}},\"pcie_gpu_to_host_gbps\":${G2H},\"pcie_host_to_gpu_gbps\":${H2G},\"pcie_bidirectional_gbps\":${BIDIR}}"
             done
 
             # Deduplicate failed test names
@@ -184,16 +192,23 @@ spec:
               OVERALL_FAIL=1
             fi
 
+            # Build subtests array JSON
+            SUBTESTS_JSON=""
+            for st in $ALL_SUBTESTS; do
+              [ -n "$SUBTESTS_JSON" ] && SUBTESTS_JSON="${SUBTESTS_JSON},"
+              SUBTESTS_JSON="${SUBTESTS_JSON}\"${st}\""
+            done
+
             if [ "$OVERALL_FAIL" -eq 1 ]; then
               RESULT_STATUS="fail"
-              SUMMARY="${FAILED_GPU_COUNT}/${GPU_COUNT} GPUs failed Level 2 diagnostics"
+              SUMMARY="${FAILED_GPU_COUNT}/${GPU_COUNT} GPUs failed Level 3 diagnostics"
             else
               RESULT_STATUS="pass"
-              SUMMARY="All GPUs passed Level 2 diagnostics"
+              SUMMARY="All GPUs passed Level 3 diagnostics"
             fi
 
             cat > /tmp/test-results.json <<RESULTS_EOF
-            {"status":"${RESULT_STATUS}","gpu_count":${GPU_COUNT},"subtests":["software","memory","pcie"],"gpus":[${GPUS_JSON}],"failed_gpu_count":${FAILED_GPU_COUNT},"failed_tests":[${FAILED_TESTS_JSON}],"summary":"${SUMMARY}"}
+            {"status":"${RESULT_STATUS}","gpu_count":${GPU_COUNT},"subtests":[${SUBTESTS_JSON}],"gpus":[${GPUS_JSON}],"failed_gpu_count":${FAILED_GPU_COUNT},"failed_tests":[${FAILED_TESTS_JSON}],"summary":"${SUMMARY}"}
             RESULTS_EOF
 
             if [ "$OVERALL_FAIL" -eq 1 ]; then

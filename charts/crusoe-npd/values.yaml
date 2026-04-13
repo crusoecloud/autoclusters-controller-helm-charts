@@ -36,7 +36,7 @@ monitors:
   - name: gpu-dcgm-diag
     conditionType: GPUDCGMUnhealthy
     conditionReason: GPUDCGMTestPassed
-    conditionMessage: "GPU DCGM Level 2 diagnostics passed"
+    conditionMessage: "GPU DCGM Level 3 diagnostics passed"
     failedReason: GPUDCGMTestFailed
   - name: nvbandwidth
     conditionType: GPUNVBandwidthUnhealthy
