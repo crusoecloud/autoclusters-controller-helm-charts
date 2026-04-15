@@ -34,6 +34,7 @@ Runs `nvbandwidth -t device_to_device_memcpy_read_ce` to measure NVLink bandwidt
 | `*a100*sxm*` | 220 |
 | `*h100*sxm*` | 316 |
 | `*h200*sxm*` | 316 |
+| `*gb200*nvl*` | 613 |
 | Default (unknown SKU) | 50 |
 
 > **Warning:** B200 SKUs (`b200*`) are currently skipped — neither DCGM nor NVBandwidth tests will run on these nodes.
@@ -145,6 +146,8 @@ nvlinkThresholds:
     threshold: 316
   - pattern: "*h200*sxm*"
     threshold: 316
+  - pattern: "*gb200*nvl*"
+    threshold: 613
 ```
 
 Patterns are matched case-insensitively against the node's `node.kubernetes.io/instance-type` label. PCIe variants (not matching `*sxm*`) will use the `defaultNvlinkThreshold`.
