@@ -76,6 +76,8 @@ nvlinkThresholds:
     threshold: 316
   - pattern: "*h200*sxm*"
     threshold: 316
+  - pattern: "*gb200*nvl*"
+    threshold: 613
 defaultNvlinkThreshold: 50
 
 # SKU patterns to skip ALL tests for (glob syntax, matched case-insensitively).
