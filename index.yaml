@@ -3,6 +3,31 @@ entries:
   autoclusters-argo-workflows:
   - apiVersion: v2
     appVersion: 3.7.9
+    created: "2026-04-17T03:13:27.52882649Z"
+    dependencies:
+    - name: argo-workflows
+      repository: https://argoproj.github.io/argo-helm
+      version: 0.47.2
+    description: Argo Workflows for autoclusters GPU testing - wraps upstream argo-workflows
+      with custom RBAC, WorkflowTemplates, and PriorityClass
+    digest: b67e8abf135af83c907be80d09112760dfb372934fa53b476ce298fefa552853
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - argo-workflows
+    - gpu-testing
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: autoclusters-argo-workflows
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/autoclusters-argo-workflows-1.2.0/autoclusters-argo-workflows-1.2.0.tgz
+    version: 1.2.0
+  - apiVersion: v2
+    appVersion: 3.7.9
     created: "2026-03-24T16:07:00.263892969Z"
     dependencies:
     - name: argo-workflows
@@ -53,6 +78,27 @@ entries:
     version: 1.0.0
   autoclusters-controller:
   - apiVersion: v2
+    appVersion: 1.1.0
+    created: "2026-04-17T03:13:27.715011069Z"
+    description: A Helm chart for the AutoClusters Controller
+    digest: 9d966e0b4531dc26f3eb3fb3129407892dd38049246007500ba5369ce1291bcc
+    home: https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    keywords:
+    - kubernetes
+    - controller
+    - operator
+    - node-testing
+    maintainers:
+    - name: Crusoe Energy
+      url: https://crusoeenergy.com
+    name: autoclusters-controller
+    sources:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts
+    type: application
+    urls:
+    - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/autoclusters-controller-1.1.0/autoclusters-controller-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
     appVersion: 1.0.0
     created: "2026-03-19T22:16:06.176782831Z"
     description: A Helm chart for the AutoClusters Controller
@@ -96,4 +142,4 @@ entries:
     urls:
     - https://github.com/crusoecloud/autoclusters-controller-helm-charts/releases/download/crusoe-npd-1.0.0/crusoe-npd-1.0.0.tgz
     version: 1.0.0
-generated: "2026-03-24T16:07:00.26390959Z"
+generated: "2026-04-17T03:13:27.715029967Z"
