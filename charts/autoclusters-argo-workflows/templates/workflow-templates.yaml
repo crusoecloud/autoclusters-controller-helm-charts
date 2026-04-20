@@ -76,8 +76,28 @@ spec:
             # Level 3 is a superset of Level 2, catching subtle hardware degradation.
             # -i gpu:N targets only GPUs, skipping NvSwitch entity checks
             # tee streams output in real-time while capturing for pass/fail check
+
+            # Default: full L3 suite (all 7 subtests).
+            DCGM_R_ARG="-r 3"
+            ALL_SUBTESTS="software memory diagnostic pcie memory_bandwidth targeted_stress targeted_power"
+
+            {{- if .Values.dcgmSoftwareSubtestSkipSKUPatterns }}
+            # Skip 'software' subtest on SKUs where the Fabric Manager check is a
+            # known false positive (e.g. GB200 host images ship without FM installed —
+            # see CRUSOE-58043). The remaining 6 subtests still validate real hardware.
+            {{- range .Values.dcgmSoftwareSubtestSkipSKUPatterns }}
+            case "$SKU_LOWER" in
+              {{ . }})
+                DCGM_R_ARG='-r memory,diagnostic,nvbandwidth,pcie,memory_bandwidth,targeted_stress,targeted_power'
+                ALL_SUBTESTS="memory diagnostic pcie memory_bandwidth targeted_stress targeted_power"
+                echo "Skipping 'software' subtest for SKU '$SKU' (matches '{{ . }}')"
+                ;;
+            esac
+            {{- end }}
+            {{- end }}
+
             DCGM_EXIT=0
-            OUTPUT=$(dcgmi diag -r 3 -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || DCGM_EXIT=$?
+            OUTPUT=$(dcgmi diag $DCGM_R_ARG -v -i "gpu:$GPU_IDS" 2>&1 | tee /dev/stderr) || DCGM_EXIT=$?
 
             # dcgmi exit codes (from source):
             #   0 (DCGM_ST_OK)              = all tests passed
@@ -145,9 +165,6 @@ spec:
                 [ -n "$GPU_ID" ] && [ -n "$BW" ] && GPU_PCIE_BIDIR[$GPU_ID]="$BW"
               fi
             done <<< "$OUTPUT"
-
-            # L3 subtests to track
-            ALL_SUBTESTS="software memory diagnostic pcie memory_bandwidth targeted_stress targeted_power"
 
             # Build JSON output
             GPUS_JSON=""

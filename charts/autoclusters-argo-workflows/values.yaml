@@ -91,6 +91,14 @@ skippedSKUPatterns:
 nvbandwidthSkippedSKUPatterns:
   - "*l40s*"
 
+# SKU patterns to skip the DCGM 'software' subtest only (glob syntax, case-insensitive).
+# The software subtest includes a Fabric Manager check that returns a false
+# positive on Blackwell SKUs (e.g. GB200) where Fabric Manager isn't installed
+# on the host image. Hardware is otherwise healthy; all other subtests pass.
+# See CRUSOE-58043.
+dcgmSoftwareSubtestSkipSKUPatterns:
+  - "gb200*"
+
 # PriorityClass for GPU test workflows
 priorityClass:
   create: true
