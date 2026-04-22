@@ -2,7 +2,7 @@ apiVersion: v2
 name: autoclusters-argo-workflows
 description: Argo Workflows for autoclusters GPU testing - wraps upstream argo-workflows with custom RBAC, WorkflowTemplates, and PriorityClass
 type: application
-version: 1.2.0
+version: 1.2.1
 appVersion: "3.7.9"
 dependencies:
   - name: argo-workflows
