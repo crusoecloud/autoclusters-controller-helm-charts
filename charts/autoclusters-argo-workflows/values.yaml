@@ -50,7 +50,9 @@ gpuResources:
 # The controller sets a separate workflow-level deadline (default 7200s)
 # that caps total workflow runtime across all sequential tests.
 deadlines:
-  templateDeadlineSeconds: 5400
+  # Level 3 diagnostics run extended stress tests (~10 min on 8x A100 SXM).
+  # 1800s (30 min) provides 3x margin for larger SKUs.
+  templateDeadlineSeconds: 1800
 
 # Container images for GPU test templates.
 # Tags must be set explicitly — Chart appVersion tracks upstream Argo (3.7.9), not test images.
@@ -76,7 +78,7 @@ nvlinkThresholds:
     threshold: 316
   - pattern: "*h200*sxm*"
     threshold: 316
-  - pattern: "*gb200*nvl*"
+  - pattern: "*gb200*"
     threshold: 613
 defaultNvlinkThreshold: 50
 
@@ -90,6 +92,14 @@ skippedSKUPatterns:
 # since DCGM Level 2 already validates PCIe integration.
 nvbandwidthSkippedSKUPatterns:
   - "*l40s*"
+
+# SKU patterns to skip the DCGM 'software' subtest only (glob syntax, case-insensitive).
+# The software subtest includes a Fabric Manager check that returns a false
+# positive on Blackwell SKUs (e.g. GB200) where Fabric Manager isn't installed
+# on the host image. Hardware is otherwise healthy; all other subtests pass.
+# See CRUSOE-58043.
+dcgmSoftwareSubtestSkipSKUPatterns:
+  - "gb200*"
 
 # PriorityClass for GPU test workflows
 priorityClass:

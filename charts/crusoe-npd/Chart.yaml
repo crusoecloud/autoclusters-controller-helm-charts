@@ -2,8 +2,8 @@ apiVersion: v2
 name: crusoe-npd
 description: A Helm chart for Node Problem Detector with custom GPU health monitoring plugins
 type: application
-version: 1.0.0
-appVersion: "1.0.0"
+version: 1.0.1
+appVersion: "1.0.1"
 keywords:
   - kubernetes
   - node-problem-detector
